@@ -1,0 +1,699 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import LogoutButton from "@/components/LogoutButton";
+import { getUsers, deleteUser, updateUserRoles } from "@/lib/superAdminApi";
+
+export default function SuperAdminDashboard() {
+  const { data: session } = useSession();
+  const [users, setUsers] = useState([]);
+  const [systemStats, setSystemStats] = useState({
+    totalUsers: 0,
+    totalWriters: 0,
+    totalAdmins: 0,
+    totalSuperAdmins: 0,
+    totalArticles: 0,
+    publishedArticles: 0,
+    pendingArticles: 0,
+    rejectedArticles: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [userToUpdateRole, setUserToUpdateRole] = useState<any>(null);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [roleUpdateLoading, setRoleUpdateLoading] = useState(false);
+  const [roleUpdateSuccess, setRoleUpdateSuccess] = useState("");
+  const [roleUpdateError, setRoleUpdateError] = useState("");
+  const [showRoleResultModal, setShowRoleResultModal] = useState(false);
+  const [roleResultMessage, setRoleResultMessage] = useState("");
+  const [roleResultType, setRoleResultType] = useState<"success" | "error">(
+    "success"
+  );
+
+  // جلب البيانات عند تحميل الصفحة
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!session?.accessToken) return;
+
+      try {
+        setLoading(true);
+        setError("");
+
+        // جلب المستخدمين فقط
+        const usersData = await getUsers(session.accessToken);
+        setUsers(usersData);
+
+        // حساب الإحصائيات من البيانات المسترجعة
+        const stats = {
+          totalUsers: usersData.length,
+          totalWriters: usersData.filter(
+            (user: any) => user.roles && user.roles.includes("User")
+          ).length,
+          totalAdmins: usersData.filter(
+            (user: any) => user.roles && user.roles.includes("Admin")
+          ).length,
+          totalSuperAdmins: usersData.filter(
+            (user: any) => user.roles && user.roles.includes("SuperAdmin")
+          ).length,
+          totalArticles: 0,
+          publishedArticles: 0,
+          pendingArticles: 0,
+          rejectedArticles: 0,
+        };
+        setSystemStats(stats);
+      } catch (error) {
+        console.error("خطأ في جلب البيانات:", error);
+        setError("حدث خطأ في جلب البيانات");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [session]);
+
+  // دالة لفتح modal الحذف
+  const handleDeleteClick = (user: any) => {
+    // فحص إذا كان المستخدم سوبر أدمن
+    if (user.roles && user.roles.includes("SuperAdmin")) {
+      setDeleteError("غير مسموح بحذف السوبر أدمن");
+      setShowDeleteModal(true);
+      setUserToDelete(null);
+      return;
+    }
+
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+    setDeleteSuccess("");
+    setDeleteError("");
+  };
+
+  // دالة لفتح modal تحديث الدور
+  const handleUpdateRoleClick = (user: any) => {
+    // فحص إذا كان المستخدم سوبر أدمن
+    if (user.roles && user.roles.includes("SuperAdmin")) {
+      setRoleUpdateError("غير مسموح بتحديث دور السوبر أدمن");
+      setShowRoleModal(true);
+      setUserToUpdateRole(null);
+      return;
+    }
+
+    setUserToUpdateRole(user);
+    setSelectedRole(
+      user.roles && user.roles.length > 0 ? user.roles[0] : "User"
+    );
+    setShowRoleModal(true);
+    setRoleUpdateSuccess("");
+    setRoleUpdateError("");
+  };
+
+  // دالة لتحديث دور المستخدم
+  const handleUpdateUserRole = async () => {
+    if (!session?.accessToken || !userToUpdateRole || !selectedRole) return;
+
+    setRoleUpdateLoading(true);
+    setRoleUpdateSuccess("");
+    setRoleUpdateError("");
+
+    try {
+      await updateUserRoles(session.accessToken, userToUpdateRole.id, [
+        selectedRole,
+      ]);
+      setRoleUpdateSuccess("تم تحديث دور المستخدم بنجاح!");
+
+      // إعادة جلب البيانات لتحديث القائمة
+      const usersData = await getUsers(session.accessToken);
+      setUsers(usersData);
+
+      // إغلاق Modal التحديث وعرض Modal النتيجة
+      setShowRoleModal(false);
+      setUserToUpdateRole(null);
+      setRoleResultMessage("تم تحديث دور المستخدم بنجاح!");
+      setRoleResultType("success");
+      setShowRoleResultModal(true);
+    } catch (error: any) {
+      console.error("خطأ في تحديث دور المستخدم:", error);
+
+      // إغلاق Modal التحديث وعرض Modal الخطأ
+      setShowRoleModal(false);
+      setUserToUpdateRole(null);
+      setRoleResultMessage(error.message || "حدث خطأ في تحديث دور المستخدم");
+      setRoleResultType("error");
+      setShowRoleResultModal(true);
+    } finally {
+      setRoleUpdateLoading(false);
+    }
+  };
+
+  // دالة لحذف المستخدم
+  const handleDeleteUser = async () => {
+    if (!session?.accessToken || !userToDelete) return;
+
+    setDeleteLoading(true);
+    setDeleteSuccess("");
+    setDeleteError("");
+
+    try {
+      await deleteUser(session.accessToken, userToDelete.id);
+      setDeleteSuccess("تم حذف المستخدم بنجاح!");
+
+      // إغلاق Modal فوراً عند النجاح
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+
+      // إعادة جلب البيانات لتحديث القائمة
+      const usersData = await getUsers(session.accessToken);
+      setUsers(usersData);
+    } catch (error: any) {
+      console.error("خطأ في حذف المستخدم:", error);
+      setDeleteError(error.message || "حدث خطأ في حذف المستخدم");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const getRoleColor = (roles: string[]) => {
+    if (!roles || roles.length === 0) return "bg-gray-100 text-gray-800";
+
+    if (roles.includes("SuperAdmin")) {
+      return "bg-purple-100 text-purple-800";
+    } else if (roles.includes("Admin")) {
+      return "bg-green-100 text-green-800";
+    } else if (roles.includes("User")) {
+      return "bg-blue-100 text-blue-800";
+    } else {
+      return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getRoleText = (roles: string[]) => {
+    if (!roles || roles.length === 0) return "غير معروف";
+
+    if (roles.includes("SuperAdmin")) {
+      return "سوبر أدمن";
+    } else if (roles.includes("Admin")) {
+      return "أدمن";
+    } else if (roles.includes("User")) {
+      return "كاتب";
+    } else {
+      return "غير معروف";
+    }
+  };
+
+  // عرض حالة التحميل
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400 arabic-text">
+            جاري تحميل البيانات...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // عرض رسالة الخطأ
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-red-600 arabic-heading">
+              خطأ في تحميل البيانات
+            </CardTitle>
+            <CardDescription className="arabic-text">{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => window.location.reload()} className="w-full">
+              إعادة المحاولة
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* الهيدر */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">أ</span>
+              </div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
+                داشبورد السوبر أدمن
+              </h1>
+            </div>
+            <LogoutButton />
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Success Alert */}
+        {deleteSuccess && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 arabic-text">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <span className="text-green-600">✅</span>
+                <span>{deleteSuccess}</span>
+              </div>
+              <button
+                onClick={() => setDeleteSuccess("")}
+                className="text-green-600 hover:text-green-800"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* الإحصائيات العامة */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                إجمالي المستخدمين
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                إجمالي المقالات
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {systemStats.totalArticles}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                المقالات المنشورة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {systemStats.publishedArticles}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                في الانتظار
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                {systemStats.pendingArticles}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* إحصائيات المستخدمين */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                الكتاب
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {systemStats.totalWriters}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                الأدمن
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {systemStats.totalAdmins}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                السوبر أدمن
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {systemStats.totalSuperAdmins}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* الإجراءات السريعة */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="arabic-heading">
+                الإجراءات السريعة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex space-x-4 space-x-reverse">
+                <Button asChild>
+                  <Link href="/dashboard/super-admin/users/create">
+                    إضافة مستخدم جديد
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/dashboard/super-admin/users">
+                    إدارة المستخدمين
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/dashboard/super-admin/settings">
+                    إعدادات النظام
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* المستخدمين */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="arabic-heading">المستخدمين</CardTitle>
+            <CardDescription className="arabic-text">
+              إدارة جميع المستخدمين في النظام
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {users.length > 0 ? (
+                users.map((user: any) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                        {user.displayName || "غير محدد"}
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400  flex-start">
+                        <span>👤 {user.userName || "غير محدد"}</span>
+                        <span>📧 {user.email}</span>
+                        <span>📞 {user.phoneNumber || "غير محدد"}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(
+                          user.roles
+                        )}`}
+                      >
+                        {getRoleText(user.roles)}
+                      </span>
+                      <Button
+                        className="me-2 cursor-pointer"
+                        variant="outline"
+                        size="sm"
+                        asChild
+                      >
+                        <Link
+                          href={`/dashboard/super-admin/users/edit/${user.id}`}
+                        >
+                          تعديل
+                        </Link>
+                      </Button>
+                      {!user.roles?.includes("SuperAdmin") && (
+                        <Button
+                          className="me-2 cursor-pointer"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleUpdateRoleClick(user)}
+                        >
+                          تحديث الدور
+                        </Button>
+                      )}
+                      <Button
+                        className="cursor-pointer"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteClick(user)}
+                      >
+                        حذف
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                  لا توجد مستخدمين
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-red-600">
+              <span>⚠️</span>
+              <span>{userToDelete ? "تأكيد الحذف" : "غير مسموح"}</span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              {userToDelete
+                ? "هل أنت متأكد من حذف المستخدم التالي؟"
+                : "لا يمكن حذف السوبر أدمن"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {userToDelete && (
+            <div className="bg-gray-50 p-4 rounded-lg arabic-text">
+              <h3 className="font-medium text-gray-900 mb-2">
+                {userToDelete.displayName || "غير محدد"}
+              </h3>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>👤 {userToDelete.userName || "غير محدد"}</p>
+                <p>📧 {userToDelete.email}</p>
+                <p>📞 {userToDelete.phoneNumber || "غير محدد"}</p>
+                <p>🎭 {getRoleText(userToDelete.roles)}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {deleteSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg arabic-text">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <span className="text-green-600">✅</span>
+                <span>{deleteSuccess}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {deleteError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg arabic-text">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <span className="text-red-600">❌</span>
+                <span>{deleteError}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-4 mt-4">
+            {userToDelete ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deleteLoading}
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteUser}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? (
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>جاري الحذف...</span>
+                    </div>
+                  ) : (
+                    "حذف المستخدم"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                إغلاق
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Role Modal */}
+      <Dialog open={showRoleModal} onOpenChange={setShowRoleModal}>
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-blue-600">
+              <span>🎭</span>
+              <span>
+                {userToUpdateRole ? "تحديث دور المستخدم" : "غير مسموح"}
+              </span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              {userToUpdateRole
+                ? "اختر الدور الجديد للمستخدم"
+                : "لا يمكن تحديث دور السوبر أدمن"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {userToUpdateRole && (
+            <div className="bg-gray-50 p-4 rounded-lg arabic-text">
+              <h3 className="font-medium text-gray-900 mb-2">
+                {userToUpdateRole.displayName || "غير محدد"}
+              </h3>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>👤 {userToUpdateRole.userName || "غير محدد"}</p>
+                <p>📧 {userToUpdateRole.email}</p>
+                <p>🎭 الدور الحالي: {getRoleText(userToUpdateRole.roles)}</p>
+              </div>
+            </div>
+          )}
+
+          {userToUpdateRole && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 arabic-text">
+                  اختر الدور الجديد:
+                </label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
+                >
+                  <option value="User">كاتب (User)</option>
+                  <option value="Admin">أدمن (Admin)</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-4 mt-4">
+            {userToUpdateRole ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRoleModal(false)}
+                  disabled={roleUpdateLoading}
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  onClick={handleUpdateUserRole}
+                  disabled={roleUpdateLoading}
+                >
+                  {roleUpdateLoading ? (
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>جاري التحديث...</span>
+                    </div>
+                  ) : (
+                    "تحديث الدور"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setShowRoleModal(false)}>
+                إغلاق
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Update Result Modal */}
+      <Dialog open={showRoleResultModal} onOpenChange={setShowRoleResultModal}>
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle
+              className={`flex items-center space-x-2 space-x-reverse ${
+                roleResultType === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              <span>{roleResultType === "success" ? "✅" : "❌"}</span>
+              <span>
+                {roleResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
+              </span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              {roleResultMessage}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowRoleResultModal(false)}
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

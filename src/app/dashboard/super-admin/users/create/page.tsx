@@ -1,0 +1,364 @@
+"use client";
+
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { createUser } from "@/lib/superAdminApi";
+
+// Schema للتحقق من صحة البيانات
+const createUserSchema = z.object({
+  Email: z.string().email("البريد الإلكتروني غير صحيح"),
+  DisplayName: z.string().min(2, "الاسم يجب أن يكون على الأقل حرفين"),
+  PhoneNumber: z.string().min(10, "رقم الهاتف يجب أن يكون على الأقل 10 أرقام"),
+  NationalId: z.string().min(5, "الرقم القومي يجب أن يكون على الأقل 5 أرقام"),
+  Password: z.string().min(6, "كلمة المرور يجب أن تكون على الأقل 6 أحرف"),
+  UserName: z
+    .string()
+    .min(3, "اسم المستخدم يجب أن يكون على الأقل 3 أحرف")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "اسم المستخدم يجب أن يكون إنجليزي فقط (أحرف وأرقام و _ و -)"
+    ),
+  FullName: z.string().min(2, "الاسم الكامل يجب أن يكون على الأقل حرفين"),
+  Role: z.string().min(1, "يجب اختيار دور"),
+});
+
+type CreateUserFormData = z.infer<typeof createUserSchema>;
+
+export default function CreateUserPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showAlert, setShowAlert] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateUserFormData>({
+    resolver: zodResolver(createUserSchema),
+  });
+
+  const onSubmit = async (data: CreateUserFormData) => {
+    if (!session?.accessToken) {
+      setError("ليس لديك صلاحية للوصول");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+    setShowAlert(false);
+
+    try {
+      const result = await createUser(session.accessToken, {
+        ...data,
+        Roles: [data.Role],
+      });
+
+      setSuccess("تم إضافة المستخدم بنجاح!");
+      setShowAlert(true);
+    } catch (error: any) {
+      console.error("خطأ في إنشاء المستخدم:", error);
+      setError(error.message || "حدث خطأ في إضافة المستخدم");
+      setShowAlert(true);
+      // لا يوجد إعادة توجيه في حالة الخطأ
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* الهيدر */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">أ</span>
+              </div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
+                إضافة مستخدم جديد
+              </h1>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/dashboard/super-admin")}
+            >
+              العودة للداشبورد
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold arabic-heading">
+              إضافة مستخدم جديد
+            </CardTitle>
+            <CardDescription className="arabic-text">
+              أدخل بيانات المستخدم الجديد
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {/* Loading State */}
+            {isLoading && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg mb-6 arabic-text text-center">
+                <div className="flex items-center justify-center space-x-2 space-x-reverse">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span>جاري إضافة المستخدم...</span>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* الاسم الكامل */}
+              <div className="space-y-2">
+                <Label htmlFor="FullName" className="arabic-text">
+                  الاسم الكامل *
+                </Label>
+                <Input
+                  id="FullName"
+                  placeholder="أدخل الاسم الكامل"
+                  className="arabic-text"
+                  {...register("FullName")}
+                />
+                {errors.FullName && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.FullName.message}
+                  </p>
+                )}
+              </div>
+
+              {/* الاسم المعروض */}
+              <div className="space-y-2">
+                <Label htmlFor="DisplayName" className="arabic-text">
+                  الاسم المعروض *
+                </Label>
+                <Input
+                  id="DisplayName"
+                  placeholder="أدخل الاسم المعروض"
+                  className="arabic-text"
+                  {...register("DisplayName")}
+                />
+                {errors.DisplayName && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.DisplayName.message}
+                  </p>
+                )}
+              </div>
+
+              {/* اسم المستخدم */}
+              <div className="space-y-2">
+                <Label htmlFor="UserName" className="arabic-text">
+                  اسم المستخدم *
+                </Label>
+                <Input
+                  id="UserName"
+                  placeholder="أدخل اسم المستخدم (إنجليزي فقط)"
+                  className="arabic-text"
+                  {...register("UserName")}
+                />
+                {errors.UserName && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.UserName.message}
+                  </p>
+                )}
+              </div>
+
+              {/* البريد الإلكتروني */}
+              <div className="space-y-2">
+                <Label htmlFor="Email" className="arabic-text">
+                  البريد الإلكتروني *
+                </Label>
+                <Input
+                  id="Email"
+                  type="email"
+                  placeholder="أدخل البريد الإلكتروني"
+                  className="arabic-text"
+                  {...register("Email")}
+                />
+                {errors.Email && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.Email.message}
+                  </p>
+                )}
+              </div>
+
+              {/* كلمة المرور */}
+              <div className="space-y-2">
+                <Label htmlFor="Password" className="arabic-text">
+                  كلمة المرور *
+                </Label>
+                <Input
+                  id="Password"
+                  type="password"
+                  placeholder="أدخل كلمة المرور"
+                  className="arabic-text"
+                  {...register("Password")}
+                />
+                {errors.Password && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.Password.message}
+                  </p>
+                )}
+              </div>
+
+              {/* رقم الهاتف */}
+              <div className="space-y-2">
+                <Label htmlFor="PhoneNumber" className="arabic-text">
+                  رقم الهاتف *
+                </Label>
+                <Input
+                  id="PhoneNumber"
+                  placeholder="أدخل رقم الهاتف"
+                  className="arabic-text"
+                  {...register("PhoneNumber")}
+                />
+                {errors.PhoneNumber && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.PhoneNumber.message}
+                  </p>
+                )}
+              </div>
+
+              {/* الرقم القومي */}
+              <div className="space-y-2">
+                <Label htmlFor="NationalId" className="arabic-text">
+                  الرقم القومي *
+                </Label>
+                <Input
+                  id="NationalId"
+                  placeholder="أدخل الرقم القومي"
+                  className="arabic-text"
+                  {...register("NationalId")}
+                />
+                {errors.NationalId && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.NationalId.message}
+                  </p>
+                )}
+              </div>
+
+              {/* الأدوار */}
+              <div className="space-y-2">
+                <Label htmlFor="Role" className="arabic-text">
+                  الدور *
+                </Label>
+                <Select onValueChange={(value) => setValue("Role", value)}>
+                  <SelectTrigger className="arabic-text">
+                    <SelectValue placeholder="اختر الدور" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="User">كاتب (User)</SelectItem>
+                    <SelectItem value="Admin">أدمن (Admin)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.Role && (
+                  <p className="text-sm text-red-600 arabic-text">
+                    {errors.Role.message}
+                  </p>
+                )}
+              </div>
+
+              {/* أزرار الإجراءات */}
+              <div className="flex space-x-4 space-x-reverse pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/dashboard/super-admin")}
+                  className="flex-1"
+                >
+                  إلغاء
+                </Button>
+                <Button type="submit" disabled={isLoading} className="flex-1">
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>جاري الإضافة...</span>
+                    </div>
+                  ) : (
+                    "إضافة المستخدم"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* Success Modal */}
+      <Dialog open={showAlert && !!success} onOpenChange={setShowAlert}>
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-green-600">
+              <span>✅</span>
+              <span>تم بنجاح!</span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              {success}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+            <Button onClick={() => router.push("/dashboard/super-admin")}>
+              العودة للداشبورد
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Modal */}
+      <Dialog open={showAlert && !!error} onOpenChange={setShowAlert}>
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-red-600">
+              <span>❌</span>
+              <span>حدث خطأ!</span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              {error}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+            <Button variant="outline" onClick={() => setShowAlert(false)}>
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
