@@ -3,6 +3,9 @@ import { Cairo, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 // import "@/lib/fontawesome";
 import AuthProvider from "@/components/AuthProvider";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { getCategoriesServer } from "@/lib/categories";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -19,17 +22,24 @@ export const metadata: Metadata = {
   description: "موقع إخباري شامل للأخبار العربية والعالمية",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // جلب التصنيفات في الـ server
+  const categories = await getCategoriesServer();
+
   return (
     <html lang="ar" dir="rtl">
       <body
         className={`${cairo.variable} ${notoSansArabic.variable} antialiased`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <Header categories={categories} />
+          <main>{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

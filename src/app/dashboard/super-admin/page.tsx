@@ -19,11 +19,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { getUsers, deleteUser, updateUserRoles } from "@/lib/superAdminApi";
+import {
+  getUsers,
+  deleteUser,
+  updateUserRoles,
+  getCategoriesWithToken,
+  createCategory,
+  deleteCategory,
+} from "@/lib/superAdminApi";
 
 export default function SuperAdminDashboard() {
   const { data: session } = useSession();
   const [users, setUsers] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     totalWriters: 0,
@@ -53,6 +61,31 @@ export default function SuperAdminDashboard() {
     "success"
   );
 
+  // State للـ Modal إضافة كاتيجوري
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
+  const [createCategoryLoading, setCreateCategoryLoading] = useState(false);
+  const [showCategoryResultModal, setShowCategoryResultModal] = useState(false);
+  const [categoryResultMessage, setCategoryResultMessage] = useState("");
+  const [categoryResultType, setCategoryResultType] = useState<
+    "success" | "error"
+  >("success");
+  const [newCategoryData, setNewCategoryData] = useState({
+    Name: "",
+    Slug: "",
+    Description: "",
+    ParentId: null as number | null,
+  });
+
+  // State للـ Modal حذف كاتيجوري
+  const [showDeleteCategoryModal, setShowDeleteCategoryModal] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<any>(null);
+  const [deleteCategoryLoading, setDeleteCategoryLoading] = useState(false);
+  const [showDeleteResultModal, setShowDeleteResultModal] = useState(false);
+  const [deleteResultMessage, setDeleteResultMessage] = useState("");
+  const [deleteResultType, setDeleteResultType] = useState<"success" | "error">(
+    "success"
+  );
+
   // جلب البيانات عند تحميل الصفحة
   useEffect(() => {
     const fetchData = async () => {
@@ -62,9 +95,13 @@ export default function SuperAdminDashboard() {
         setLoading(true);
         setError("");
 
-        // جلب المستخدمين فقط
+        // جلب المستخدمين والكاتيجوريز
         const usersData = await getUsers(session.accessToken);
+        const categoriesData = await getCategoriesWithToken(
+          session.accessToken
+        );
         setUsers(usersData);
+        setCategories(categoriesData);
 
         // حساب الإحصائيات من البيانات المسترجعة
         const stats = {
@@ -192,6 +229,122 @@ export default function SuperAdminDashboard() {
       setDeleteError(error.message || "حدث خطأ في حذف المستخدم");
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  // دالة فتح Modal حذف الكاتيجوري
+  const handleDeleteCategoryClick = (category: any) => {
+    setCategoryToDelete(category);
+    setShowDeleteCategoryModal(true);
+  };
+
+  // دالة حذف الكاتيجوري
+  const handleDeleteCategory = async () => {
+    if (!session?.accessToken || !categoryToDelete) return;
+
+    try {
+      setDeleteCategoryLoading(true);
+
+      // البحث عن السابكاتيجوريز وحذفها أولاً
+      const subcategories = categories.filter(
+        (cat: any) => cat.parentId === categoryToDelete.id
+      ) as any[];
+
+      // حذف كل السابكاتيجوريز أولاً
+      for (const subcategory of subcategories) {
+        try {
+          await deleteCategory(session.accessToken, subcategory.id);
+          console.log(`تم حذف السابكاتيجوري: ${subcategory.name}`);
+        } catch (subError) {
+          console.error(
+            `خطأ في حذف السابكاتيجوري ${subcategory.name}:`,
+            subError
+          );
+          // نكمل الحذف حتى لو فشل حذف سابكاتيجوري واحد
+        }
+      }
+
+      // حذف الكاتيجوري الرئيسي بعد حذف السابكاتيجوريز
+      await deleteCategory(session.accessToken, categoryToDelete.id);
+
+      // إعادة جلب البيانات لتحديث القائمة
+      const categoriesData = await getCategoriesWithToken(session.accessToken);
+      setCategories(categoriesData);
+
+      // إغلاق Modal الحذف وعرض Modal النتيجة
+      setShowDeleteCategoryModal(false);
+      setCategoryToDelete(null);
+
+      const deletedCount = subcategories.length;
+      const message =
+        deletedCount > 0
+          ? `تم حذف الكاتيجوري "${categoryToDelete.name}" و ${deletedCount} سابكاتيجوري بنجاح!`
+          : `تم حذف الكاتيجوري "${categoryToDelete.name}" بنجاح!`;
+
+      setDeleteResultMessage(message);
+      setDeleteResultType("success");
+      setShowDeleteResultModal(true);
+    } catch (error: any) {
+      console.error("خطأ في حذف الكاتيجوري:", error);
+
+      // إغلاق Modal الحذف وعرض Modal الخطأ
+      setShowDeleteCategoryModal(false);
+      setCategoryToDelete(null);
+      setDeleteResultMessage(error.message || "حدث خطأ في حذف الكاتيجوري");
+      setDeleteResultType("error");
+      setShowDeleteResultModal(true);
+    } finally {
+      setDeleteCategoryLoading(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!session?.accessToken) {
+      setCategoryResultMessage("ليس لديك صلاحية للوصول");
+      setCategoryResultType("error");
+      setShowCategoryResultModal(true);
+      return;
+    }
+
+    if (!newCategoryData.Name || !newCategoryData.Slug) {
+      setCategoryResultMessage("الاسم والـ Slug مطلوبان");
+      setCategoryResultType("error");
+      setShowCategoryResultModal(true);
+      return;
+    }
+
+    setCreateCategoryLoading(true);
+
+    try {
+      await createCategory(session.accessToken, newCategoryData);
+      setCategoryResultMessage("تم إنشاء الكاتيجوري بنجاح!");
+      setCategoryResultType("success");
+
+      // إعادة جلب الكاتيجوريز
+      const categoriesData = await getCategoriesWithToken(session.accessToken);
+      setCategories(categoriesData);
+
+      // إعادة تعيين البيانات
+      setNewCategoryData({
+        Name: "",
+        Slug: "",
+        Description: "",
+        ParentId: null,
+      });
+
+      // إغلاق Modal الإضافة وعرض Modal النتيجة
+      setShowCreateCategoryModal(false);
+      setShowCategoryResultModal(true);
+    } catch (error: any) {
+      console.error("خطأ في إنشاء الكاتيجوري:", error);
+      setCategoryResultMessage(error.message || "حدث خطأ في إنشاء الكاتيجوري");
+      setCategoryResultType("error");
+
+      // إغلاق Modal الإضافة وعرض Modal الخطأ
+      setShowCreateCategoryModal(false);
+      setShowCategoryResultModal(true);
+    } finally {
+      setCreateCategoryLoading(false);
     }
   };
 
@@ -420,6 +573,112 @@ export default function SuperAdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* الكاتيجوريز */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="arabic-heading">الكاتيجوريز</CardTitle>
+                <CardDescription className="arabic-text">
+                  جميع الكاتيجوريز والتصنيفات الفرعية في النظام
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => setShowCreateCategoryModal(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                إضافة كاتيجوري جديد
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {categories.length > 0 ? (
+                categories.map((category: any) => {
+                  const subCategories = categories.filter(
+                    (cat: any) => cat.parentId === category.id
+                  );
+
+                  return (
+                    <div
+                      key={category.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                          {category.name}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                          <span>🏷️ {category.slug}</span>
+                          <span>
+                            📝 {category.description || "لا يوجد وصف"}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              category.parentId === null
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {category.parentId === null
+                              ? "كاتيجوري رئيسي"
+                              : "سابكاتيجوري"}
+                          </span>
+                        </div>
+
+                        {/* عرض السابكاتيجوريز */}
+                        {subCategories.length > 0 && (
+                          <div className="mt-3 pl-4 border-r-2 border-gray-200 dark:border-gray-600">
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 arabic-text">
+                              التصنيفات الفرعية:
+                            </h4>
+                            <div className="space-y-1">
+                              {subCategories.map((subCategory: any) => (
+                                <div
+                                  key={subCategory.id}
+                                  className="text-sm text-gray-600 dark:text-gray-400 arabic-text"
+                                >
+                                  • {subCategory.name} ({subCategory.slug})
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <Link
+                          href={`/dashboard/super-admin/category/${category.id}/edit`}
+                        >
+                          <Button
+                            className=" cursor-pointer"
+                            variant="outline"
+                            size="sm"
+                          >
+                            تعديل
+                          </Button>
+                        </Link>
+                        <Button
+                          className="cursor-pointer ms-4"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteCategoryClick(category)}
+                        >
+                          حذف
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                  لا توجد كاتيجوريز
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* المستخدمين */}
         <Card>
@@ -688,6 +947,263 @@ export default function SuperAdminDashboard() {
             <Button
               variant="outline"
               onClick={() => setShowRoleResultModal(false)}
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Category Modal */}
+      <Dialog
+        open={showCreateCategoryModal}
+        onOpenChange={setShowCreateCategoryModal}
+      >
+        <DialogContent className="arabic-text max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-blue-600">
+              <span>➕</span>
+              <span>إضافة كاتيجوري جديد</span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text">
+              أدخل بيانات الكاتيجوري الجديد
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* الاسم */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 arabic-text">
+                الاسم *
+              </label>
+              <input
+                type="text"
+                value={newCategoryData.Name}
+                onChange={(e) =>
+                  setNewCategoryData({
+                    ...newCategoryData,
+                    Name: e.target.value,
+                  })
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
+                placeholder="أدخل اسم الكاتيجوري"
+              />
+            </div>
+
+            {/* الـ Slug */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 arabic-text">
+                الـ Slug *
+              </label>
+              <input
+                type="text"
+                value={newCategoryData.Slug}
+                onChange={(e) =>
+                  setNewCategoryData({
+                    ...newCategoryData,
+                    Slug: e.target.value,
+                  })
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
+                placeholder="أدخل الـ slug"
+              />
+            </div>
+
+            {/* الوصف */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 arabic-text">
+                الوصف
+              </label>
+              <textarea
+                value={newCategoryData.Description}
+                onChange={(e) =>
+                  setNewCategoryData({
+                    ...newCategoryData,
+                    Description: e.target.value,
+                  })
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
+                placeholder="أدخل وصف الكاتيجوري"
+                rows={3}
+              />
+            </div>
+
+            {/* نوع الكاتيجوري */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 arabic-text">
+                نوع الكاتيجوري
+              </label>
+              <select
+                value={newCategoryData.ParentId || ""}
+                onChange={(e) =>
+                  setNewCategoryData({
+                    ...newCategoryData,
+                    ParentId:
+                      e.target.value === "" ? null : parseInt(e.target.value),
+                  })
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
+              >
+                <option value="">كاتيجوري رئيسي</option>
+                {categories
+                  .filter((cat: any) => cat.parentId === null)
+                  .map((category: any) => (
+                    <option key={category.id} value={category.id}>
+                      سابكاتيجوري تحت: {category.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* رسائل النجاح والخطأ - تم إزالتها */}
+          </div>
+
+          <div className="flex justify-end gap-4 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateCategoryModal(false)}
+              disabled={createCategoryLoading}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleCreateCategory}
+              disabled={createCategoryLoading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {createCategoryLoading ? (
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>جاري الإنشاء...</span>
+                </div>
+              ) : (
+                "إنشاء الكاتيجوري"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Result Modal */}
+      <Dialog
+        open={showCategoryResultModal}
+        onOpenChange={setShowCategoryResultModal}
+      >
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle
+              className={`flex items-center space-x-2 space-x-reverse ${
+                categoryResultType === "success"
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              <span>{categoryResultType === "success" ? "✅" : "❌"}</span>
+              <span>
+                {categoryResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
+              </span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              {categoryResultMessage}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowCategoryResultModal(false)}
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Confirmation Modal */}
+      <Dialog
+        open={showDeleteCategoryModal}
+        onOpenChange={setShowDeleteCategoryModal}
+      >
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-red-600">
+              <span>⚠️</span>
+              <span>تأكيد الحذف</span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              هل أنت متأكد من حذف الكاتيجوري "{categoryToDelete?.name}"؟
+              <br />
+              {(() => {
+                const subcategories = categories.filter(
+                  (cat: any) => cat.parentId === categoryToDelete?.id
+                ) as any[];
+                return subcategories.length > 0 ? (
+                  <>
+                    <span className="text-orange-600 font-medium">
+                      سيتم حذف {subcategories.length} سابكاتيجوري معه أيضاً!
+                    </span>
+                    <br />
+                  </>
+                ) : null;
+              })()}
+              <span className="text-red-600 font-medium">
+                هذا الإجراء لا يمكن التراجع عنه!
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteCategoryModal(false)}
+              disabled={deleteCategoryLoading}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCategory}
+              disabled={deleteCategoryLoading}
+            >
+              {deleteCategoryLoading ? (
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>جاري الحذف...</span>
+                </div>
+              ) : (
+                "حذف الكاتيجوري"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Result Modal */}
+      <Dialog
+        open={showDeleteResultModal}
+        onOpenChange={setShowDeleteResultModal}
+      >
+        <DialogContent className="arabic-text">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-blue-600">
+              <span>{deleteResultType === "success" ? "✅" : "❌"}</span>
+              <span>
+                {deleteResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
+              </span>
+            </DialogTitle>
+            <DialogDescription className="arabic-text text-lg">
+              {deleteResultMessage}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={() => setShowDeleteResultModal(false)}
+              className={
+                deleteResultType === "success"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              }
             >
               إغلاق
             </Button>

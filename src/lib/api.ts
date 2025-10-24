@@ -1,6 +1,6 @@
 // إعدادات الـ API
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api",
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "https://newswebsite.runasp.net",
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",
@@ -31,7 +31,7 @@ export const API_ENDPOINTS = {
   DELETE_ARTICLE: "/articles",
 
   // الفئات
-  CATEGORIES: "/categories",
+  CATEGORIES: "/api/category",
   SUBCATEGORIES: "/subcategories",
 
   // الأخبار التريندينج
@@ -194,4 +194,28 @@ export const getAuthToken = (): string | null => {
 export const getAuthHeaders = () => {
   const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// دالة لجلب التصنيفات
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CATEGORIES}`;
+    console.log("Fetching categories from:", url);
+
+    const response = await fetch(url);
+
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Categories data received:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    // إرجاع مصفوفة فارغة بدلاً من إلقاء الخطأ
+    return [];
+  }
 };
