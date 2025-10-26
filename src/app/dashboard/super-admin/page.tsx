@@ -18,6 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Pagination } from "@/components/ui/pagination";
 import LogoutButton from "@/components/LogoutButton";
 import {
   getUsers,
@@ -27,11 +29,15 @@ import {
   createCategory,
   deleteCategory,
 } from "@/lib/superAdminApi";
+import { getArticles, ApiArticle } from "@/lib/api";
 
 export default function SuperAdminDashboard() {
   const { data: session } = useSession();
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [articles, setArticles] = useState<ApiArticle[]>([]);
+  const [articlesPage, setArticlesPage] = useState(1);
+  const [articlesTotal, setArticlesTotal] = useState(0);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     totalWriters: 0,
@@ -95,13 +101,27 @@ export default function SuperAdminDashboard() {
         setLoading(true);
         setError("");
 
-        // جلب المستخدمين والكاتيجوريز
-        const usersData = await getUsers(session.accessToken);
-        const categoriesData = await getCategoriesWithToken(
-          session.accessToken
-        );
+        // جلب المستخدمين والكاتيجوريز والمقالات
+        const [usersData, categoriesData, articlesData] = await Promise.all([
+          getUsers(session.accessToken),
+          getCategoriesWithToken(session.accessToken),
+          getArticles(articlesPage, 5, undefined, session.accessToken),
+        ]);
+
         setUsers(usersData);
         setCategories(categoriesData);
+        setArticles(articlesData.data || []);
+
+        // استخدام totalCount من الـ API response بشكل ديناميكي
+        const apiTotalCount = articlesData.totalCount || 0;
+        setArticlesTotal(apiTotalCount);
+
+        console.log("=== Articles API Response ===");
+        console.log("Page:", articlesData.pageIndex);
+        console.log("Page Size:", articlesData.pageSize);
+        console.log("Total Count:", apiTotalCount);
+        console.log("Articles in this page:", articlesData.data?.length || 0);
+        console.log("Total Pages:", Math.ceil(apiTotalCount / 5));
 
         // حساب الإحصائيات من البيانات المسترجعة
         const stats = {
@@ -115,10 +135,12 @@ export default function SuperAdminDashboard() {
           totalSuperAdmins: usersData.filter(
             (user: any) => user.roles && user.roles.includes("SuperAdmin")
           ).length,
-          totalArticles: 0,
-          publishedArticles: 0,
-          pendingArticles: 0,
-          rejectedArticles: 0,
+          totalArticles: articlesData.totalCount || articles.length,
+          publishedArticles:
+            articlesData.data?.filter((a: ApiArticle) => a.publishedAt)
+              ?.length || 0,
+          pendingArticles: 0, // سيتم تحديثه حسب API
+          rejectedArticles: 0, // سيتم تحديثه حسب API
         };
         setSystemStats(stats);
       } catch (error) {
@@ -130,7 +152,12 @@ export default function SuperAdminDashboard() {
     };
 
     fetchData();
-  }, [session]);
+  }, [session, articlesPage]);
+
+  // دالة لتغيير صفحة المقالات
+  const handleArticlesPageChange = (page: number) => {
+    setArticlesPage(page);
+  };
 
   // دالة لفتح modal الحذف
   const handleDeleteClick = (user: any) => {
@@ -544,217 +571,307 @@ export default function SuperAdminDashboard() {
           </Card>
         </div>
 
-        {/* الإجراءات السريعة */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="arabic-heading">
-                الإجراءات السريعة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex space-x-4 space-x-reverse">
-                <Button asChild>
-                  <Link href="/dashboard/super-admin/users/create">
-                    إضافة مستخدم جديد
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard/super-admin/users">
-                    إدارة المستخدمين
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard/super-admin/settings">
-                    إعدادات النظام
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Tabs للمقالات والمستخدمين والكاتيجوريز */}
+        <Tabs defaultValue="articles" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6 flex-row-reverse">
+            <TabsTrigger
+              value="articles"
+              className="arabic-text flex-row-reverse"
+            >
+              المقالات ({articles.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="categories"
+              className="arabic-text flex-row-reverse"
+            >
+              الكاتيجوريز ({categories.length})
+            </TabsTrigger>
+            <TabsTrigger value="users" className="arabic-text flex-row-reverse">
+              المستخدمين ({users.length})
+            </TabsTrigger>
+          </TabsList>
 
-        {/* الكاتيجوريز */}
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle className="arabic-heading">الكاتيجوريز</CardTitle>
-                <CardDescription className="arabic-text">
-                  جميع الكاتيجوريز والتصنيفات الفرعية في النظام
-                </CardDescription>
-              </div>
-              <Button
-                onClick={() => setShowCreateCategoryModal(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                إضافة كاتيجوري جديد
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {categories.length > 0 ? (
-                categories.map((category: any) => {
-                  const subCategories = categories.filter(
-                    (cat: any) => cat.parentId === category.id
-                  );
-
-                  return (
-                    <div
-                      key={category.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
-                          {category.name}
-                        </h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                          <span>🏷️ {category.slug}</span>
-                          <span>
-                            📝 {category.description || "لا يوجد وصف"}
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              category.parentId === null
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {category.parentId === null
-                              ? "كاتيجوري رئيسي"
-                              : "سابكاتيجوري"}
-                          </span>
-                        </div>
-
-                        {/* عرض السابكاتيجوريز */}
-                        {subCategories.length > 0 && (
-                          <div className="mt-3 pl-4 border-r-2 border-gray-200 dark:border-gray-600">
-                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 arabic-text">
-                              التصنيفات الفرعية:
-                            </h4>
-                            <div className="space-y-1">
-                              {subCategories.map((subCategory: any) => (
-                                <div
-                                  key={subCategory.id}
-                                  className="text-sm text-gray-600 dark:text-gray-400 arabic-text"
-                                >
-                                  • {subCategory.name} ({subCategory.slug})
-                                </div>
-                              ))}
-                            </div>
+          {/* تب المقالات */}
+          <TabsContent value="articles">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center flex-row-reverse">
+                  <div>
+                    <CardTitle className="arabic-heading text-right">
+                      المقالات
+                    </CardTitle>
+                    <CardDescription className="arabic-text">
+                      جميع المقالات في النظام
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() =>
+                      (window.location.href = "/dashboard/writer/create")
+                    }
+                    className="bg-green-600 hover:bg-green-700 cursor-pointer"
+                  >
+                    إضافة مقال جديد
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {articles.length > 0 ? (
+                    articles.map((article) => (
+                      <div
+                        key={article.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                            {article.title}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            <span>✍️ {article.authorName}</span>
+                            <span>
+                              📅{" "}
+                              {new Date(article.publishedAt).toLocaleDateString(
+                                "ar-EG"
+                              )}
+                            </span>
+                            <span>📂 {article.categoryName || "بدون قسم"}</span>
+                            {article.isTrending && (
+                              <span className="text-orange-600">🔥 تريند</span>
+                            )}
                           </div>
-                        )}
+                        </div>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <Link href={`/news/${article.slug}`}>
+                            <Button variant="outline" size="sm">
+                              عرض
+                            </Button>
+                          </Link>
+                          <Link
+                            href={`/dashboard/super-admin/article/${article.id}`}
+                          >
+                            <Button variant="outline" size="sm">
+                              مراجعة
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                      لا توجد مقالات
+                    </div>
+                  )}
+                </div>
 
-                      <div className="flex items-center space-x-2 space-x-reverse">
-                        <Link
-                          href={`/dashboard/super-admin/category/${category.id}/edit`}
+                {/* Pagination */}
+                {articlesTotal > 5 && (
+                  <div className="mt-6 flex justify-center">
+                    <Pagination
+                      currentPage={articlesPage}
+                      totalPages={Math.ceil(articlesTotal / 5)}
+                      onPageChange={handleArticlesPageChange}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* تب الكاتيجوريز */}
+          <TabsContent value="categories">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center flex-row-reverse">
+                  <div>
+                    <CardTitle className="arabic-heading text-right">
+                      الكاتيجوريز
+                    </CardTitle>
+                    <CardDescription className="arabic-text">
+                      جميع الكاتيجوريز والتصنيفات الفرعية في النظام
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setShowCreateCategoryModal(true)}
+                    className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                  >
+                    إضافة كاتيجوري جديد
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {categories.length > 0 ? (
+                    categories.map((category: any) => {
+                      const subCategories = categories.filter(
+                        (cat: any) => cat.parentId === category.id
+                      );
+
+                      return (
+                        <div
+                          key={category.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
                         >
+                          <div className="flex-1">
+                            <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                              {category.name}
+                            </h3>
+                            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                              <span>🏷️ {category.slug}</span>
+                              <span>
+                                📝 {category.description || "لا يوجد وصف"}
+                              </span>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  category.parentId === null
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-green-100 text-green-800"
+                                }`}
+                              >
+                                {category.parentId === null
+                                  ? "كاتيجوري رئيسي"
+                                  : "سابكاتيجوري"}
+                              </span>
+                            </div>
+
+                            {subCategories.length > 0 && (
+                              <div className="mt-3 pl-4 border-r-2 border-gray-200 dark:border-gray-600">
+                                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 arabic-text">
+                                  التصنيفات الفرعية:
+                                </h4>
+                                <div className="space-y-1">
+                                  {subCategories.map((subCategory: any) => (
+                                    <div
+                                      key={subCategory.id}
+                                      className="text-sm text-gray-600 dark:text-gray-400 arabic-text"
+                                    >
+                                      • {subCategory.name} ({subCategory.slug})
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center space-x-2 space-x-reverse">
+                            <Link
+                              href={`/dashboard/super-admin/category/${category.id}/edit`}
+                            >
+                              <Button variant="outline" size="sm">
+                                تعديل
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteCategoryClick(category)
+                              }
+                            >
+                              حذف
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                      لا توجد كاتيجوريز
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* تب المستخدمين */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center flex-row-reverse">
+                  <div>
+                    <CardTitle className="arabic-heading text-right">
+                      المستخدمين
+                    </CardTitle>
+                    <CardDescription className="arabic-text float-right">
+                      إدارة جميع المستخدمين في النظام
+                    </CardDescription>
+                  </div>
+                  <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                    <Link href="/dashboard/super-admin/users/create">
+                      إضافة مستخدم جديد
+                    </Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {users.length > 0 ? (
+                    users.map((user: any) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                            {user.displayName || "غير محدد"}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400  flex-start">
+                            <span>👤 {user.userName || "غير محدد"}</span>
+                            <span>📧 {user.email}</span>
+                            <span>📞 {user.phoneNumber || "غير محدد"}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(
+                              user.roles
+                            )}`}
+                          >
+                            {getRoleText(user.roles)}
+                          </span>
                           <Button
-                            className=" cursor-pointer"
+                            className="me-2 cursor-pointer"
                             variant="outline"
                             size="sm"
+                            asChild
                           >
-                            تعديل
+                            <Link
+                              href={`/dashboard/super-admin/users/edit/${user.id}`}
+                            >
+                              تعديل
+                            </Link>
                           </Button>
-                        </Link>
-                        <Button
-                          className="cursor-pointer ms-4"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteCategoryClick(category)}
-                        >
-                          حذف
-                        </Button>
+                          {!user.roles?.includes("SuperAdmin") && (
+                            <Button
+                              className="me-2 cursor-pointer"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleUpdateRoleClick(user)}
+                            >
+                              تحديث الدور
+                            </Button>
+                          )}
+                          <Button
+                            className="cursor-pointer"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteClick(user)}
+                          >
+                            حذف
+                          </Button>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                      لا توجد مستخدمين
                     </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
-                  لا توجد كاتيجوريز
+                  )}
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* المستخدمين */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="arabic-heading">المستخدمين</CardTitle>
-            <CardDescription className="arabic-text">
-              إدارة جميع المستخدمين في النظام
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {users.length > 0 ? (
-                users.map((user: any) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
-                        {user.displayName || "غير محدد"}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400  flex-start">
-                        <span>👤 {user.userName || "غير محدد"}</span>
-                        <span>📧 {user.email}</span>
-                        <span>📞 {user.phoneNumber || "غير محدد"}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(
-                          user.roles
-                        )}`}
-                      >
-                        {getRoleText(user.roles)}
-                      </span>
-                      <Button
-                        className="me-2 cursor-pointer"
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
-                        <Link
-                          href={`/dashboard/super-admin/users/edit/${user.id}`}
-                        >
-                          تعديل
-                        </Link>
-                      </Button>
-                      {!user.roles?.includes("SuperAdmin") && (
-                        <Button
-                          className="me-2 cursor-pointer"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleUpdateRoleClick(user)}
-                        >
-                          تحديث الدور
-                        </Button>
-                      )}
-                      <Button
-                        className="cursor-pointer"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteClick(user)}
-                      >
-                        حذف
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
-                  لا توجد مستخدمين
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Delete Confirmation Modal */}

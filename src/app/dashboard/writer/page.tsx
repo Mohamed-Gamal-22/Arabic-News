@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,61 +12,59 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import LogoutButton from "@/components/LogoutButton";
+import { getArticles } from "@/lib/api";
+import { ApiArticle } from "@/lib/api";
 
 export default function WriterDashboard() {
-  const [articles] = useState([
-    {
-      id: "1",
-      title: "تطورات جديدة في الأزمة السياسية",
-      status: "published",
-      publishDate: "2024-01-15",
-      views: 1250,
-    },
-    {
-      id: "2",
-      title: "ارتفاع أسعار النفط يؤثر على الاقتصاد",
-      status: "pending",
-      publishDate: "2024-01-14",
-      views: 0,
-    },
-    {
-      id: "3",
-      title: "فوز فريق كرة القدم الوطني",
-      status: "draft",
-      publishDate: "2024-01-13",
-      views: 0,
-    },
-  ]);
+  const { data: session } = useSession();
+  const [articles, setArticles] = useState<ApiArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "published":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        setLoading(true);
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "published":
-        return "منشور";
-      case "pending":
-        return "في الانتظار";
-      case "draft":
-        return "مسودة";
-      case "rejected":
-        return "مرفوض";
-      default:
-        return "غير معروف";
+        // الحصول على التوكن من session
+        if (!session?.accessToken) {
+          setError("غير مصرح لك بالوصول");
+          setLoading(false);
+          return;
+        }
+
+        const token = session.accessToken;
+
+        console.log("Fetching articles with token:", token);
+
+        // جلب مقالات الكاتب (مع التوكن)
+        const response = await getArticles(1, 10, undefined, token);
+
+        console.log("Articles response:", response);
+
+        if (response && response.data) {
+          setArticles(response.data);
+        }
+      } catch (err) {
+        setError("حدث خطأ في جلب المقالات");
+        console.error("Error fetching articles:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchArticles();
     }
-  };
+  }, [session]);
+
+  // حساب الإحصائيات
+  const totalArticles = articles.length;
+  const publishedArticles = articles.filter(
+    (a) => a.isTrending !== undefined
+  ).length; // سيتم تعديله حسب الـ API
+  const pendingArticles = articles.length; // سيتم تعديله حسب الـ API
+  const draftArticles = articles.length; // سيتم تعديله حسب الـ API
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -96,7 +95,7 @@ export default function WriterDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{totalArticles}</div>
             </CardContent>
           </Card>
 
@@ -107,7 +106,9 @@ export default function WriterDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">8</div>
+              <div className="text-2xl font-bold text-green-600">
+                {publishedArticles}
+              </div>
             </CardContent>
           </Card>
 
@@ -118,7 +119,9 @@ export default function WriterDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">2</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {pendingArticles}
+              </div>
             </CardContent>
           </Card>
 
@@ -129,7 +132,9 @@ export default function WriterDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-600">2</div>
+              <div className="text-2xl font-bold text-gray-600">
+                {draftArticles}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -166,44 +171,55 @@ export default function WriterDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {articles.map((article) => (
-                <div
-                  key={article.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
-                      {article.title}
-                    </h3>
-                    <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      <span>📅 {article.publishDate}</span>
-                      <span>👁️ {article.views} مشاهدة</span>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                  جاري التحميل...
+                </p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 arabic-text">{error}</p>
+              </div>
+            ) : articles.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                  لا توجد مقالات بعد
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {articles.map((article) => (
+                  <div
+                    key={article.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
+                        {article.title}
+                      </h3>
+                      <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>
+                          📅{" "}
+                          {new Date(article.publishedAt).toLocaleDateString(
+                            "ar-EG"
+                          )}
+                        </span>
+                        <span>🏷️ {article.categoryName}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Button variant="outline" size="sm">
+                        تعديل
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                        article.status
-                      )}`}
-                    >
-                      {getStatusText(article.status)}
-                    </span>
-                    <Button variant="outline" size="sm">
-                      تعديل
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
     </div>
   );
 }
-
-
-
-
-

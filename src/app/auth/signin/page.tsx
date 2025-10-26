@@ -41,10 +41,11 @@ export default function SignInPage() {
       } else if (result?.ok) {
         // الحصول على الجلسة لتحديد الدور
         const session = await getSession();
+        const role = (session as any)?.user?.role;
 
-        if (session?.user?.role) {
+        if (role) {
           // توجيه المستخدم حسب دوره
-          switch (session.user.role) {
+          switch (role) {
             case "writer":
               router.push("/dashboard/writer");
               break;

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,58 +12,87 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import LogoutButton from "@/components/LogoutButton";
+import { getArticles } from "@/lib/api";
+import { ApiArticle } from "@/lib/api";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function AdminDashboard() {
-  const [pendingArticles] = useState([
-    {
-      id: "1",
-      title: "تطورات جديدة في الأزمة السياسية",
-      author: "أحمد محمد",
-      submitDate: "2024-01-15",
-      category: "سياسة",
-    },
-    {
-      id: "2",
-      title: "ارتفاع أسعار النفط يؤثر على الاقتصاد",
-      author: "سارة أحمد",
-      submitDate: "2024-01-14",
-      category: "اقتصاد",
-    },
-    {
-      id: "3",
-      title: "فوز فريق كرة القدم الوطني",
-      author: "محمد علي",
-      submitDate: "2024-01-13",
-      category: "رياضة",
-    },
-  ]);
+  const { data: session } = useSession();
+  const [articles, setArticles] = useState<ApiArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const [allArticles] = useState([
-    {
-      id: "1",
-      title: "تطورات جديدة في الأزمة السياسية",
-      author: "أحمد محمد",
-      status: "published",
-      publishDate: "2024-01-15",
-      views: 1250,
-    },
-    {
-      id: "2",
-      title: "ارتفاع أسعار النفط يؤثر على الاقتصاد",
-      author: "سارة أحمد",
-      status: "pending",
-      publishDate: "2024-01-14",
-      views: 0,
-    },
-    {
-      id: "3",
-      title: "فوز فريق كرة القدم الوطني",
-      author: "محمد علي",
-      status: "rejected",
-      publishDate: "2024-01-13",
-      views: 0,
-    },
-  ]);
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        setLoading(true);
+
+        console.log("Session:", session);
+
+        // الحصول على التوكن من session
+        const token = session?.accessToken;
+        const role = session?.user?.role;
+
+        console.log("Token:", token);
+        console.log("Role:", role);
+
+        if (!token) {
+          console.log("No token found");
+          setError("غير مصرح لك بالوصول");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Fetching articles for role:", role);
+
+        // جميع المستخدمين بيحتاجوا التوكن عشان يجيبوا مقالاتهم
+        // الـ API هيرجع بس المقالات الخاصة بالـ user اللي بيبعت توكنه
+        console.log("Fetching articles with token for current user");
+        const response = await getArticles(page, 10, undefined, token);
+
+        if (response && response.data) {
+          const apiTotalCount = response.totalCount || 0;
+          setArticles(response.data);
+          setTotalCount(apiTotalCount);
+
+          console.log("=== Admin Articles API Response ===");
+          console.log("Page:", page);
+          console.log("Total Count:", apiTotalCount);
+          console.log("Articles in this page:", response.data.length);
+          console.log("Total Pages:", Math.ceil(apiTotalCount / 10));
+        } else {
+          console.log("No data in response");
+          setArticles([]);
+          setTotalCount(0);
+        }
+      } catch (err) {
+        setError("حدث خطأ في جلب المقالات");
+        console.error("Error fetching articles:", err);
+        setArticles([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchArticles();
+    } else {
+      console.log("No session yet");
+      setLoading(false);
+    }
+  }, [session, page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  // حساب الإحصائيات
+  const totalArticles = articles.length;
+  const publishedArticles = articles.filter((a) => a.publishedAt).length;
+  const pendingArticles = articles.length; // سيتم تعديله حسب الـ API
+  const totalWriters = new Set(articles.map((a) => a.authorId)).size;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -123,7 +153,7 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">45</div>
+              <div className="text-2xl font-bold">{totalArticles}</div>
             </CardContent>
           </Card>
 
@@ -134,7 +164,9 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">32</div>
+              <div className="text-2xl font-bold text-green-600">
+                {publishedArticles}
+              </div>
             </CardContent>
           </Card>
 
@@ -145,7 +177,9 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">8</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {pendingArticles}
+              </div>
             </CardContent>
           </Card>
 
@@ -156,55 +190,8 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">12</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* المقالات في الانتظار */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="arabic-heading">
-                المقالات في الانتظار
-              </CardTitle>
-              <CardDescription className="arabic-text">
-                المقالات التي تحتاج مراجعة وموافقة
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {pendingArticles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
-                        {article.title}
-                      </h3>
-                      <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span>✍️ {article.author}</span>
-                        <span>📅 {article.submitDate}</span>
-                        <span>📂 {article.category}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        موافقة
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        مراجعة
-                      </Button>
-                      <Button variant="destructive" size="sm">
-                        رفض
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-2xl font-bold text-blue-600">
+                {totalWriters}
               </div>
             </CardContent>
           </Card>
@@ -219,48 +206,82 @@ export default function AdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {allArticles.map((article) => (
-                <div
-                  key={article.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
-                      {article.title}
-                    </h3>
-                    <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      <span>✍️ {article.author}</span>
-                      <span>📅 {article.publishDate}</span>
-                      <span>👁️ {article.views} مشاهدة</span>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                  جاري التحميل...
+                </p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 arabic-text">{error}</p>
+              </div>
+            ) : articles.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                  لا توجد مقالات بعد
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {articles.map((article) => (
+                  <div
+                    key={article.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
+                        {article.title}
+                      </h3>
+                      <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>✍️ {article.authorName}</span>
+                        <span>
+                          📅{" "}
+                          {new Date(article.publishedAt).toLocaleDateString(
+                            "ar-EG"
+                          )}
+                        </span>
+                        <span>📂 {article.categoryName}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                          "published"
+                        )}`}
+                      >
+                        {getStatusText("published")}
+                      </span>
+                      <Link href={`/dashboard/admin/article/${article.id}`}>
+                        <Button variant="outline" size="sm">
+                          مراجعة
+                        </Button>
+                      </Link>
+                      <Button variant="outline" size="sm">
+                        تعديل
+                      </Button>
+                      <Button variant="destructive" size="sm">
+                        حذف
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                        article.status
-                      )}`}
-                    >
-                      {getStatusText(article.status)}
-                    </span>
-                    <Button variant="outline" size="sm">
-                      تعديل
-                    </Button>
-                    <Button variant="destructive" size="sm">
-                      حذف
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalCount > 10 && (
+              <div className="mt-6 flex justify-center">
+                <Pagination
+                  currentPage={page}
+                  totalPages={Math.ceil(totalCount / 10)}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
     </div>
   );
 }
-
-
-
-
-

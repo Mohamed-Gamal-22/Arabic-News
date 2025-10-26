@@ -1,18 +1,64 @@
-import FeaturedNewsCard from "@/components/FeaturedNewsCard";
-import TrendingNewsSlider from "@/components/TrendingNewsSlider";
-import NewsCard from "@/components/NewsCard";
-import { sampleNews, featuredNews } from "@/data/sampleNews";
+"use client";
+
+import { useState, useEffect } from "react";
+import ArticlesSlider from "@/components/ArticlesSlider";
+import ArticleCard from "@/components/ArticleCard";
+import { getArticles, ArticlesResponse } from "@/lib/api";
+import { Pagination } from "@/components/ui/pagination";
+import { getArticlesServer } from "@/lib/articles";
 
 export default function Home() {
-  // الحصول على أول 4 أخبار للسلايدر
-  const trendingNews = sampleNews.slice(0, 4);
-  
-  // الحصول على باقي الأخبار للعرض في الشبكة
-  const regularNews = sampleNews.slice(4);
+  const [trendingArticles, setTrendingArticles] = useState([]);
+  const [regularArticles, setRegularArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        setLoading(true);
+
+        // جلب المقالات التريندينج
+        const trendingResponse = await getArticlesServer(1, 10, true);
+        setTrendingArticles(trendingResponse.data || []);
+
+        // جلب المقالات العادية
+        const regularResponse = await getArticles(
+          page,
+          12,
+          undefined,
+          undefined
+        );
+
+        const apiTotalCount = regularResponse.totalCount || 0;
+        setRegularArticles(regularResponse.data || []);
+        setTotalCount(apiTotalCount);
+
+        console.log("=== Home Articles API Response ===");
+        console.log("Page:", page);
+        console.log("Total Count:", apiTotalCount);
+        console.log(
+          "Articles in this page:",
+          regularResponse.data?.length || 0
+        );
+        console.log("Total Pages:", Math.ceil(apiTotalCount / 12));
+      } catch (error) {
+        console.error("Error fetching articles:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArticles();
+  }, [page]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* الهيرو سيكشن مع الأخبار المميزة */}
       <section className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 text-center arabic-heading">
@@ -23,49 +69,51 @@ export default function Home() {
           </p>
         </div>
 
-        {/* الأخبار المميزة */}
+        {/* سلايدر الأخبار العاجلة */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 arabic-heading">
-            الأخبار المميزة
+            الأخبار العاجلة
           </h2>
-          <FeaturedNewsCard
-            id={featuredNews.id}
-            title={featuredNews.title}
-            summary={featuredNews.summary}
-            imageUrl={featuredNews.imageUrl}
-            category={featuredNews.category}
-            publishDate={featuredNews.publishDate}
-            readTime={featuredNews.readTime}
-          />
+          <ArticlesSlider articles={trendingArticles} />
         </div>
 
-        {/* سلايدر الأخبار الرائجة */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 arabic-heading">
-            الأخبار الرائجة
-          </h2>
-          <TrendingNewsSlider articles={trendingNews} />
-        </div>
-
-        {/* شبكة الأخبار العادية */}
+        {/* شبكة المقالات */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 arabic-heading">
             آخر الأخبار
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {regularNews.map((news) => (
-              <NewsCard
-                key={news.id}
-                id={news.id}
-                title={news.title}
-                summary={news.summary}
-                imageUrl={news.imageUrl}
-                category={news.category}
-                publishDate={news.publishDate}
-                readTime={news.readTime}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
+                جاري التحميل...
+              </p>
+            </div>
+          ) : regularArticles.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+                {regularArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalCount > 12 && (
+                <div className="mt-6 flex justify-center">
+                  <Pagination
+                    currentPage={page}
+                    totalPages={Math.ceil(totalCount / 12)}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
+                لا توجد مقالات متاحة حالياً
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </div>

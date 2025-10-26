@@ -1,6 +1,7 @@
 // إعدادات الـ API
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "https://newswebsite.runasp.net",
+  BASE_URL:
+    process.env.NEXT_PUBLIC_API_URL || "https://newswebsite.runasp.net/api",
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",
@@ -31,8 +32,11 @@ export const API_ENDPOINTS = {
   DELETE_ARTICLE: "/articles",
 
   // الفئات
-  CATEGORIES: "/api/category",
+  CATEGORIES: "/category",
   SUBCATEGORIES: "/subcategories",
+
+  // المقالات من API الجديد
+  ARTICLE: "/article",
 
   // الأخبار التريندينج
   TRENDING_ARTICLES: "/articles/trending",
@@ -196,10 +200,229 @@ export const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+// واجهة Article من الـ API
+export interface ApiArticle {
+  id: number;
+  title: string;
+  summary: string;
+  content: string;
+  slug: string;
+  authorId: string;
+  keywords: string | null;
+  authorName: string;
+  publishedAt: string;
+  isTrending: boolean;
+  categoryName: string;
+  imageUrl: string | null;
+}
+
+// واجهة Articles Response
+export interface ArticlesResponse {
+  pageIndex: number;
+  pageSize: number;
+  totalCount: number;
+  data: ApiArticle[];
+}
+
+// دالة لجلب المقالات
+export const getArticles = async (
+  pageIndex: number = 1,
+  pageSize: number = 10,
+  isTrending?: boolean,
+  token?: string
+): Promise<ArticlesResponse> => {
+  try {
+    let url = `https://newswebsite.runasp.net/api/article?pageIndex=${pageIndex}&pageSize=${pageSize}`;
+
+    if (isTrending !== undefined) {
+      url += `&IsTrending=${isTrending}`;
+    }
+
+    console.log("Fetching articles from:", url);
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    // إضافة التوكن إذا كان متوفر
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers,
+    });
+
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Articles data received:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching articles:", error);
+    return {
+      pageIndex: 1,
+      pageSize: 0,
+      totalCount: 0,
+      data: [],
+    };
+  }
+};
+
+// دالة لجلب مقال واحد بالـ ID
+export const getArticleById = async (
+  id: number,
+  token?: string
+): Promise<ApiArticle | null> => {
+  try {
+    const url = `https://newswebsite.runasp.net/api/article/${id}`;
+    console.log("Fetching article by ID from:", url);
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    // إضافة التوكن إذا كان متوفر
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers,
+    });
+
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Article data received:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching article:", error);
+    return null;
+  }
+};
+
+// دالة لإنشاء مقال جديد
+export const createArticle = async (
+  formData: FormData,
+  token: string
+): Promise<ApiArticle | null> => {
+  try {
+    const url = `https://newswebsite.runasp.net/api/article`;
+    console.log("=== Creating Article ===");
+    console.log("URL:", url);
+    console.log("Token:", token ? `${token.substring(0, 20)}...` : "Missing");
+
+    // طباعة بيانات FormData للتحقق
+    console.log("FormData entries:");
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(
+          `  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`
+        );
+      } else {
+        console.log(`  ${key}:`, value);
+      }
+    }
+
+    console.log("Making POST request...");
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // لا تضف Content-Type مع FormData - المتصفح هيكبشه تلقائياً
+      },
+      body: formData,
+    });
+
+    console.log("Response status:", response.status);
+    console.log("Response status text:", response.statusText);
+    console.log("Response OK:", response.ok);
+
+    if (!response.ok) {
+      // محاولة قراءة رسالة الخطأ
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      let errorDetails = "";
+
+      try {
+        // قراءة النص
+        const text = await response.text();
+        console.log("Error response text:", text);
+        console.log("Error response text length:", text.length);
+        errorDetails = text;
+
+        // محاولة تحليله كـ JSON
+        if (text && text.length > 0 && text.trim().startsWith("{")) {
+          try {
+            const errorData = JSON.parse(text);
+            console.log(
+              "Error response JSON:",
+              JSON.stringify(errorData, null, 2)
+            );
+
+            if (errorData.errors) {
+              // معالجة أخطاء التحقق من الـ API
+              const errorMessages = Object.entries(errorData.errors)
+                .map(([field, errors]) => {
+                  const errorArray = Array.isArray(errors) ? errors : [errors];
+                  return `${field}: ${errorArray.join(", ")}`;
+                })
+                .join("\n");
+              errorMessage = errorMessages;
+            } else if (errorData.title) {
+              errorMessage = errorData.title;
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            } else if (errorData.detail) {
+              errorMessage = errorData.detail;
+            } else if (errorData.error) {
+              errorMessage = errorData.error;
+            } else {
+              errorMessage = text;
+            }
+          } catch (parseError) {
+            console.error("JSON Parse Error:", parseError);
+            errorMessage = text || `Bad Request (${response.status})`;
+          }
+        } else {
+          errorMessage = text || `Bad Request (${response.status})`;
+        }
+      } catch (err) {
+        console.error("Error reading error response:", err);
+        errorMessage = `Bad Request (${response.status})`;
+      }
+
+      console.error("=== ERROR DETAILS ===");
+      console.error("Status:", response.status);
+      console.error("Message:", errorMessage);
+      console.error("Details:", errorDetails);
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    console.log("Article created:", data);
+    return data;
+  } catch (error) {
+    console.error("Error creating article:", error);
+    throw error;
+  }
+};
+
 // دالة لجلب التصنيفات
 export const getCategories = async (): Promise<Category[]> => {
   try {
-    const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CATEGORIES}`;
+    const url = `https://newswebsite.runasp.net/api/category`;
     console.log("Fetching categories from:", url);
 
     const response = await fetch(url);

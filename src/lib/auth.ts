@@ -101,20 +101,52 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, trigger, session: updateSession }) {
+      // عند تسجيل الدخول الأول
       if (user) {
-        token.role = user.role;
+        console.log("=== JWT Callback - First Login ===");
+        console.log("User ID:", user.id);
+        console.log("User Email:", user.email);
+        console.log("User Role:", user.role);
+        console.log(
+          "User Token:",
+          user.token ? `${user.token.substring(0, 30)}...` : "MISSING TOKEN!"
+        );
+
         token.id = user.id;
+        token.role = user.role;
         token.accessToken = user.token;
+
+        console.log("Token set successfully:", {
+          hasAccessToken: !!token.accessToken,
+          tokenLength: token.accessToken?.length,
+        });
+      } else {
+        console.log("=== JWT Callback - Subsequent Request ===");
+        console.log("Token ID:", token.id);
+        console.log("Token Role:", token.role);
+        console.log("Has AccessToken:", !!token.accessToken);
       }
+
       return token;
     },
     async session({ session, token }) {
-      if (token) {
+      console.log("=== Session Callback ===");
+      console.log("Token ID:", token.id);
+      console.log("Token Role:", token.role);
+      console.log("Has AccessToken:", !!token.accessToken);
+      console.log("AccessToken length:", token.accessToken?.length);
+
+      if (token && token.accessToken) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.accessToken = token.accessToken as string;
+        console.log("✅ Session successfully configured");
+      } else {
+        console.error("❌ Session missing accessToken!");
+        console.log("Full token object:", JSON.stringify(token, null, 2));
       }
+
       return session;
     },
   },
