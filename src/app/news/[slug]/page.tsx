@@ -149,3 +149,9 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
 
 
 
+
+
+
+
+
+

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,12 +15,17 @@ import {
 import LogoutButton from "@/components/LogoutButton";
 import { getArticles } from "@/lib/api";
 import { ApiArticle } from "@/lib/api";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function WriterDashboard() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [articles, setArticles] = useState<ApiArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pageIndex, setPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // 5 مقالات في كل صفحة
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -37,13 +43,26 @@ export default function WriterDashboard() {
 
         console.log("Fetching articles with token:", token);
 
-        // جلب مقالات الكاتب (مع التوكن)
-        const response = await getArticles(1, 10, undefined, token);
+        // جلب مقالات الكاتب (مع التوكن) - استخدام pageIndex و pageSize
+        const response = await getArticles(pageIndex, pageSize, undefined, token);
 
         console.log("Articles response:", response);
 
-        if (response && response.data) {
-          setArticles(response.data);
+        if (response) {
+          // استخدام pageIndex من response، لكن نستخدم pageSize الذي أرسلناه (5)
+          setPageIndex(response.pageIndex || pageIndex);
+          // لا نحدث pageSize من response - نستخدم القيمة التي أرسلناها (5)
+          setTotalCount(response.totalCount || 0);
+          setArticles(response.data || []);
+
+          console.log("=== Writer Articles API Response ===");
+          console.log("PageIndex sent:", pageIndex);
+          console.log("PageSize sent:", pageSize);
+          console.log("PageIndex from API:", response.pageIndex);
+          console.log("PageSize from API:", response.pageSize);
+          console.log("Total Count:", response.totalCount);
+          console.log("Articles in this page:", response.data?.length || 0);
+          console.log("Total Pages:", Math.ceil(response.totalCount / pageSize));
         }
       } catch (err) {
         setError("حدث خطأ في جلب المقالات");
@@ -56,15 +75,18 @@ export default function WriterDashboard() {
     if (session) {
       fetchArticles();
     }
-  }, [session]);
+  }, [session, pageIndex, pageSize]);
 
-  // حساب الإحصائيات
-  const totalArticles = articles.length;
-  const publishedArticles = articles.filter(
-    (a) => a.isTrending !== undefined
-  ).length; // سيتم تعديله حسب الـ API
-  const pendingArticles = articles.length; // سيتم تعديله حسب الـ API
-  const draftArticles = articles.length; // سيتم تعديله حسب الـ API
+  const handlePageChange = (newPageIndex: number) => {
+    setPageIndex(newPageIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // حساب الإحصائيات - استخدام totalCount من API بدلاً من articles.length
+  const totalArticles = totalCount; // استخدام totalCount من API
+  const publishedArticles = articles.filter((a) => a.publishedAt).length;
+  const pendingArticles = 0; // سيتم تحديثه حسب API
+  const draftArticles = 0; // سيتم تحديثه حسب API
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -188,34 +210,53 @@ export default function WriterDashboard() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {articles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
-                        {article.title}
-                      </h3>
-                      <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span>
-                          📅{" "}
-                          {new Date(article.publishedAt).toLocaleDateString(
-                            "ar-EG"
-                          )}
-                        </span>
-                        <span>🏷️ {article.categoryName}</span>
+              <>
+                <div className="space-y-4">
+                  {articles.map((article) => (
+                    <div
+                      key={article.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
+                          {article.title}
+                        </h3>
+                        <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
+                          <span>
+                            📅{" "}
+                            {new Date(article.publishedAt).toLocaleDateString(
+                              "ar-EG"
+                            )}
+                          </span>
+                          <span>🏷️ {article.categoryName}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/dashboard/writer/article/${article.id}`)
+                          }
+                        >
+                          عرض التفاصيل
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Button variant="outline" size="sm">
-                        تعديل
-                      </Button>
-                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalCount > pageSize && (
+                  <div className="mt-6 flex justify-center">
+                    <Pagination
+                      currentPage={pageIndex}
+                      totalPages={Math.ceil(totalCount / pageSize)}
+                      onPageChange={handlePageChange}
+                    />
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

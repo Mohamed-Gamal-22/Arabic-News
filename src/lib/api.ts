@@ -68,6 +68,27 @@ export interface User {
   updatedAt: string;
 }
 
+// واجهة User من الـ API الجديد
+export interface ApiUser {
+  id: string;
+  userName: string;
+  email: string;
+  displayName: string;
+  phoneNumber: string | null;
+  nationalId: string | null;
+  fullName: string;
+  imageUrl: string | null;
+  roles: string[];
+  categoryIds: number[];
+  categories: Array<{
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    parentId: number | null;
+  }>;
+}
+
 // أنواع المقالات
 export interface Article {
   id: string;
@@ -232,7 +253,14 @@ export const getArticles = async (
   token?: string
 ): Promise<ArticlesResponse> => {
   try {
-    let url = `https://newswebsite.runasp.net/api/article?pageIndex=${pageIndex}&pageSize=${pageSize}`;
+    // التأكد من إرسال pageSize بشكل صحيح
+    const finalPageSize = pageSize || 5; // default 5 إذا لم يتم تحديده
+    let url = `https://newswebsite.runasp.net/api/article?pageIndex=${pageIndex}&pageSize=${finalPageSize}`;
+
+    console.log("=== getArticles API Call ===");
+    console.log("PageIndex:", pageIndex);
+    console.log("PageSize:", finalPageSize);
+    console.log("Full URL:", url);
 
     if (isTrending !== undefined) {
       url += `&IsTrending=${isTrending}`;
@@ -308,6 +336,106 @@ export const getArticleById = async (
     return data;
   } catch (error) {
     console.error("Error fetching article:", error);
+    return null;
+  }
+};
+
+// دالة لتحديث مقال
+export const updateArticle = async (
+  articleId: string,
+  articleData: {
+    Title: string;
+    Content: string;
+    Summary: string;
+    Slug: string;
+    CategoryId: string;
+  },
+  token: string
+): Promise<ApiArticle | null> => {
+  try {
+    const url = `https://newswebsite.runasp.net/api/article/${articleId}`;
+    console.log("=== Updating Article ===");
+    console.log("URL:", url);
+    console.log("Article ID:", articleId);
+    console.log("Article Data:", articleData);
+
+    // إنشاء FormData بدلاً من JSON
+    const formDataToSend = new FormData();
+    formDataToSend.append("Title", articleData.Title);
+    formDataToSend.append("content", articleData.Content);
+    formDataToSend.append("summary", articleData.Summary);
+    formDataToSend.append("slug", articleData.Slug);
+    formDataToSend.append("categoryId", articleData.CategoryId);
+
+    console.log("Gemy debug FormDataToSend", formDataToSend);
+
+    // طباعة FormData للتحقق
+    console.log("FormData entries:");
+    for (const [key, value] of formDataToSend.entries()) {
+      console.log(`  ${key}:`, value);
+    }
+
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // لا نضيف Content-Type مع FormData - المتصفح يضيفه تلقائياً
+      },
+      body: formDataToSend,
+    });
+
+    console.log("Response status:", response.status);
+    console.log("Response OK:", response.ok);
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      let errorDetails: any = null;
+
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          errorDetails = await response.json();
+          console.log("Error response JSON:", errorDetails);
+
+          // إذا كان هناك validation errors، نعرضها بشكل واضح
+          if (errorDetails.errors) {
+            const validationErrors: string[] = [];
+            Object.keys(errorDetails.errors).forEach((field) => {
+              const fieldErrors = errorDetails.errors[field];
+              if (Array.isArray(fieldErrors)) {
+                fieldErrors.forEach((err: string) => {
+                  validationErrors.push(`${field}: ${err}`);
+                });
+              }
+            });
+            if (validationErrors.length > 0) {
+              errorMessage = `خطأ في التحقق من البيانات:\n${validationErrors.join(
+                "\n"
+              )}`;
+            } else {
+              errorMessage =
+                errorDetails.title || errorDetails.message || errorMessage;
+            }
+          } else {
+            errorMessage =
+              errorDetails.title || errorDetails.message || errorMessage;
+          }
+        } else {
+          const text = await response.text();
+          console.log("Error response text:", text);
+          errorMessage = text || errorMessage;
+        }
+      } catch (e) {
+        console.error("Error reading error response:", e);
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    console.log("✅ Article updated successfully:", data);
+    return data;
+  } catch (error) {
     return null;
   }
 };

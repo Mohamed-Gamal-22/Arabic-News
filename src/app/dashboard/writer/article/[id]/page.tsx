@@ -13,10 +13,9 @@ import {
 } from "@/components/ui/card";
 import LogoutButton from "@/components/LogoutButton";
 import { getArticleById } from "@/lib/api";
-import { approveArticle, rejectArticle } from "@/lib/articles";
 import { ApiArticle } from "@/lib/api";
 
-export default function ReviewArticle({
+export default function ArticleDetails({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -27,7 +26,6 @@ export default function ReviewArticle({
   const [article, setArticle] = useState<ApiArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -41,7 +39,6 @@ export default function ReviewArticle({
         }
 
         const token = session.accessToken;
-
         const articleId = parseInt(resolvedParams.id);
 
         if (isNaN(articleId)) {
@@ -53,6 +50,13 @@ export default function ReviewArticle({
         const articleData = await getArticleById(articleId, token);
 
         if (articleData) {
+          // التحقق من أن المقال ملك للكاتب
+          const currentUserId = (session.user as any)?.id;
+          if (articleData.authorId !== currentUserId) {
+            setError("ليس لديك صلاحية لعرض هذا المقال");
+            setLoading(false);
+            return;
+          }
           setArticle(articleData);
         } else {
           setError("لم يتم العثور على المقال");
@@ -70,42 +74,6 @@ export default function ReviewArticle({
     }
   }, [session, resolvedParams.id]);
 
-  const handleApprove = async () => {
-    if (!article || !session?.accessToken) return;
-
-    try {
-      setProcessing(true);
-      await approveArticle(article.id, session.accessToken);
-      alert("تم قبول المقال بنجاح");
-      router.push("/dashboard/admin");
-    } catch (err: any) {
-      alert(err.message || "حدث خطأ في قبول المقال");
-      console.error("Error approving article:", err);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (!article || !session?.accessToken) return;
-
-    if (!confirm("هل أنت متأكد من رفض هذا المقال؟")) {
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      await rejectArticle(article.id, session.accessToken);
-      alert("تم رفض المقال بنجاح");
-      router.push("/dashboard/admin");
-    } catch (err: any) {
-      alert(err.message || "حدث خطأ في رفض المقال");
-      console.error("Error rejecting article:", err);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* الهيدر */}
@@ -113,11 +81,11 @@ export default function ReviewArticle({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">أ</span>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
-                مراجعة المقال
+                تفاصيل المقال
               </h1>
             </div>
             <LogoutButton />
@@ -136,7 +104,7 @@ export default function ReviewArticle({
           <div className="text-center py-12">
             <p className="text-red-600 arabic-text">{error}</p>
             <Button
-              onClick={() => router.push("/dashboard/admin")}
+              onClick={() => router.push("/dashboard/writer")}
               className="mt-4"
             >
               العودة للداشبورد
@@ -203,28 +171,13 @@ export default function ReviewArticle({
               </CardContent>
             </Card>
 
-            {/* الأزرار */}
-            <div className="flex justify-end space-x-4 space-x-reverse">
+            {/* زر العودة فقط - لا تعديل ولا حذف */}
+            <div className="flex justify-end">
               <Button
                 variant="outline"
-                onClick={() => router.push("/dashboard/admin")}
-                disabled={processing}
+                onClick={() => router.push("/dashboard/writer")}
               >
                 العودة للداشبورد
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleReject}
-                disabled={processing}
-              >
-                {processing ? "جاري المعالجة..." : "رفض"}
-              </Button>
-              <Button
-                onClick={handleApprove}
-                disabled={processing}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {processing ? "جاري المعالجة..." : "قبول"}
               </Button>
             </div>
           </>
@@ -233,3 +186,4 @@ export default function ReviewArticle({
     </div>
   );
 }
+

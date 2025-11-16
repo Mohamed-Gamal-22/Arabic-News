@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pagination } from "@/components/ui/pagination";
 import LogoutButton from "@/components/LogoutButton";
@@ -29,15 +40,23 @@ import {
   createCategory,
   deleteCategory,
 } from "@/lib/superAdminApi";
-import { getArticles, ApiArticle } from "@/lib/api";
+import {
+  getArticles,
+  getArticleById,
+  updateArticle,
+  ApiArticle,
+} from "@/lib/api";
 
 export default function SuperAdminDashboard() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [articles, setArticles] = useState<ApiArticle[]>([]);
-  const [articlesPage, setArticlesPage] = useState(1);
+  const [articlesPageIndex, setArticlesPageIndex] = useState(1);
+  const [articlesPageSize, setArticlesPageSize] = useState(5);
   const [articlesTotal, setArticlesTotal] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>("articles");
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     totalWriters: 0,
@@ -55,6 +74,8 @@ export default function SuperAdminDashboard() {
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [deleteSuccess, setDeleteSuccess] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  const [deleteCancelMessage, setDeleteCancelMessage] = useState("");
+  const [showDeleteResultAlert, setShowDeleteResultAlert] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [userToUpdateRole, setUserToUpdateRole] = useState<any>(null);
   const [selectedRole, setSelectedRole] = useState("");
@@ -92,6 +113,14 @@ export default function SuperAdminDashboard() {
     "success"
   );
 
+  // قراءة الـ tab من URL query parameter
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["articles", "categories", "users"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   // جلب البيانات عند تحميل الصفحة
   useEffect(() => {
     const fetchData = async () => {
@@ -105,23 +134,34 @@ export default function SuperAdminDashboard() {
         const [usersData, categoriesData, articlesData] = await Promise.all([
           getUsers(session.accessToken),
           getCategoriesWithToken(session.accessToken),
-          getArticles(articlesPage, 5, undefined, session.accessToken),
+          getArticles(
+            articlesPageIndex,
+            articlesPageSize,
+            undefined,
+            session.accessToken
+          ),
         ]);
 
         setUsers(usersData);
         setCategories(categoriesData);
+
+        // استخدام pageIndex من response، لكن نستخدم pageSize الذي أرسلناه (5)
+        setArticlesPageIndex(articlesData.pageIndex || articlesPageIndex);
+        // لا نحدث pageSize من response - نستخدم القيمة التي أرسلناها (5)
+        setArticlesTotal(articlesData.totalCount || 0);
         setArticles(articlesData.data || []);
 
-        // استخدام totalCount من الـ API response بشكل ديناميكي
-        const apiTotalCount = articlesData.totalCount || 0;
-        setArticlesTotal(apiTotalCount);
-
         console.log("=== Articles API Response ===");
-        console.log("Page:", articlesData.pageIndex);
-        console.log("Page Size:", articlesData.pageSize);
-        console.log("Total Count:", apiTotalCount);
+        console.log("PageIndex sent:", articlesPageIndex);
+        console.log("PageSize sent:", articlesPageSize);
+        console.log("PageIndex from API:", articlesData.pageIndex);
+        console.log("PageSize from API:", articlesData.pageSize);
+        console.log("Total Count:", articlesData.totalCount);
         console.log("Articles in this page:", articlesData.data?.length || 0);
-        console.log("Total Pages:", Math.ceil(apiTotalCount / 5));
+        console.log(
+          "Total Pages:",
+          Math.ceil(articlesData.totalCount / articlesPageSize)
+        );
 
         // حساب الإحصائيات من البيانات المسترجعة
         const stats = {
@@ -152,11 +192,12 @@ export default function SuperAdminDashboard() {
     };
 
     fetchData();
-  }, [session, articlesPage]);
+  }, [session, articlesPageIndex, articlesPageSize]);
 
   // دالة لتغيير صفحة المقالات
-  const handleArticlesPageChange = (page: number) => {
-    setArticlesPage(page);
+  const handleArticlesPageChange = (newPageIndex: number) => {
+    setArticlesPageIndex(newPageIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // دالة لفتح modal الحذف
@@ -173,6 +214,8 @@ export default function SuperAdminDashboard() {
     setShowDeleteModal(true);
     setDeleteSuccess("");
     setDeleteError("");
+    setDeleteCancelMessage("");
+    setShowDeleteResultAlert(false);
   };
 
   // دالة لفتح modal تحديث الدور
@@ -196,16 +239,26 @@ export default function SuperAdminDashboard() {
 
   // دالة لتحديث دور المستخدم
   const handleUpdateUserRole = async () => {
-    if (!session?.accessToken || !userToUpdateRole || !selectedRole) return;
+    if (
+      !session?.accessToken ||
+      !userToUpdateRole ||
+      !selectedRole ||
+      selectedRole === ""
+    ) {
+      setRoleUpdateError("يجب اختيار دور");
+      return;
+    }
 
     setRoleUpdateLoading(true);
     setRoleUpdateSuccess("");
     setRoleUpdateError("");
 
     try {
-      await updateUserRoles(session.accessToken, userToUpdateRole.id, [
-        selectedRole,
-      ]);
+      await updateUserRoles(
+        session.accessToken,
+        userToUpdateRole.id,
+        selectedRole
+      );
       setRoleUpdateSuccess("تم تحديث دور المستخدم بنجاح!");
 
       // إعادة جلب البيانات لتحديث القائمة
@@ -239,10 +292,11 @@ export default function SuperAdminDashboard() {
     setDeleteLoading(true);
     setDeleteSuccess("");
     setDeleteError("");
+    setDeleteCancelMessage("");
 
     try {
       await deleteUser(session.accessToken, userToDelete.id);
-      setDeleteSuccess("تم حذف المستخدم بنجاح!");
+      setDeleteSuccess("تم الحذف بنجاح");
 
       // إغلاق Modal فوراً عند النجاح
       setShowDeleteModal(false);
@@ -251,12 +305,31 @@ export default function SuperAdminDashboard() {
       // إعادة جلب البيانات لتحديث القائمة
       const usersData = await getUsers(session.accessToken);
       setUsers(usersData);
+
+      // عرض alert النجاح
+      setShowDeleteResultAlert(true);
+      setTimeout(() => {
+        setShowDeleteResultAlert(false);
+        setDeleteSuccess("");
+      }, 3000);
     } catch (error: any) {
       console.error("خطأ في حذف المستخدم:", error);
       setDeleteError(error.message || "حدث خطأ في حذف المستخدم");
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  // دالة لإلغاء الحذف
+  const handleCancelDelete = () => {
+    setDeleteCancelMessage("تم الإلغاء");
+    setShowDeleteModal(false);
+    setUserToDelete(null);
+    setShowDeleteResultAlert(true);
+    setTimeout(() => {
+      setShowDeleteResultAlert(false);
+      setDeleteCancelMessage("");
+    }, 3000);
   };
 
   // دالة فتح Modal حذف الكاتيجوري
@@ -347,8 +420,10 @@ export default function SuperAdminDashboard() {
       setCategoryResultMessage("تم إنشاء الكاتيجوري بنجاح!");
       setCategoryResultType("success");
 
-      // إعادة جلب الكاتيجوريز
+      // إعادة جلب جميع التصنيفات بعد الإضافة
+      console.log("=== Refreshing categories after creation ===");
       const categoriesData = await getCategoriesWithToken(session.accessToken);
+      console.log("✅ Categories refreshed:", categoriesData);
       setCategories(categoriesData);
 
       // إعادة تعيين البيانات
@@ -458,17 +533,35 @@ export default function SuperAdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Success Alert */}
-        {deleteSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 arabic-text">
+        {/* Success/Cancel Alert */}
+        {showDeleteResultAlert && (deleteSuccess || deleteCancelMessage) && (
+          <div
+            className={`border px-4 py-3 rounded-lg mb-6 arabic-text ${
+              deleteSuccess
+                ? "bg-green-50 border-green-200 text-green-700"
+                : "bg-blue-50 border-blue-200 text-blue-700"
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2 space-x-reverse">
-                <span className="text-green-600">✅</span>
-                <span>{deleteSuccess}</span>
+                <span
+                  className={deleteSuccess ? "text-green-600" : "text-blue-600"}
+                >
+                  {deleteSuccess ? "✅" : "ℹ️"}
+                </span>
+                <span>{deleteSuccess || deleteCancelMessage}</span>
               </div>
               <button
-                onClick={() => setDeleteSuccess("")}
-                className="text-green-600 hover:text-green-800"
+                onClick={() => {
+                  setShowDeleteResultAlert(false);
+                  setDeleteSuccess("");
+                  setDeleteCancelMessage("");
+                }}
+                className={
+                  deleteSuccess
+                    ? "text-green-600 hover:text-green-800"
+                    : "text-blue-600 hover:text-blue-800"
+                }
               >
                 ✕
               </button>
@@ -572,7 +665,7 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* Tabs للمقالات والمستخدمين والكاتيجوريز */}
-        <Tabs defaultValue="articles" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6 flex-row-reverse">
             <TabsTrigger
               value="articles"
@@ -606,7 +699,7 @@ export default function SuperAdminDashboard() {
                   </div>
                   <Button
                     onClick={() =>
-                      (window.location.href = "/dashboard/writer/create")
+                      (window.location.href = "/dashboard/super-admin/create")
                     }
                     className="bg-green-600 hover:bg-green-700 cursor-pointer"
                   >
@@ -641,16 +734,18 @@ export default function SuperAdminDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 space-x-reverse">
-                          <Link href={`/news/${article.slug}`}>
-                            <Button variant="outline" size="sm">
-                              عرض
-                            </Button>
-                          </Link>
                           <Link
                             href={`/dashboard/super-admin/article/${article.id}`}
                           >
                             <Button variant="outline" size="sm">
                               مراجعة
+                            </Button>
+                          </Link>
+                          <Link
+                            href={`/dashboard/super-admin/article/${article.id}/edit`}
+                          >
+                            <Button variant="outline" size="sm">
+                              تعديل
                             </Button>
                           </Link>
                         </div>
@@ -664,11 +759,11 @@ export default function SuperAdminDashboard() {
                 </div>
 
                 {/* Pagination */}
-                {articlesTotal > 5 && (
+                {articlesTotal > articlesPageSize && (
                   <div className="mt-6 flex justify-center">
                     <Pagination
-                      currentPage={articlesPage}
-                      totalPages={Math.ceil(articlesTotal / 5)}
+                      currentPage={articlesPageIndex}
+                      totalPages={Math.ceil(articlesTotal / articlesPageSize)}
                       onPageChange={handleArticlesPageChange}
                     />
                   </div>
@@ -813,13 +908,30 @@ export default function SuperAdminDashboard() {
                       >
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
-                            {user.displayName || "غير محدد"}
+                            {user.displayName || user.fullName || "غير محدد"}
                           </h3>
                           <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400  flex-start">
                             <span>👤 {user.userName || "غير محدد"}</span>
-                            <span>📧 {user.email}</span>
+                            <span>📧 {user.email || "غير محدد"}</span>
                             <span>📞 {user.phoneNumber || "غير محدد"}</span>
+                            {user.nationalId && (
+                              <span>🆔 {user.nationalId}</span>
+                            )}
                           </div>
+                          {user.categories && user.categories.length > 0 && (
+                            <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                              <span>📂 التصنيفات:</span>
+                              {user.categories.map((cat: any, idx: number) => (
+                                <span
+                                  key={cat.id}
+                                  className="px-2 py-1 bg-gray-100 rounded"
+                                >
+                                  {cat.name}
+                                  {idx < user.categories.length - 1 && ","}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2 space-x-reverse">
                           <span
@@ -829,6 +941,18 @@ export default function SuperAdminDashboard() {
                           >
                             {getRoleText(user.roles)}
                           </span>
+                          <Button
+                            className="me-2 cursor-pointer"
+                            variant="outline"
+                            size="sm"
+                            asChild
+                          >
+                            <Link
+                              href={`/dashboard/super-admin/users/${user.id}`}
+                            >
+                              عرض
+                            </Link>
+                          </Button>
                           <Button
                             className="me-2 cursor-pointer"
                             variant="outline"
@@ -892,12 +1016,15 @@ export default function SuperAdminDashboard() {
           {userToDelete && (
             <div className="bg-gray-50 p-4 rounded-lg arabic-text">
               <h3 className="font-medium text-gray-900 mb-2">
-                {userToDelete.displayName || "غير محدد"}
+                {userToDelete.displayName ||
+                  userToDelete.fullName ||
+                  "غير محدد"}
               </h3>
               <div className="text-sm text-gray-600 space-y-1">
                 <p>👤 {userToDelete.userName || "غير محدد"}</p>
-                <p>📧 {userToDelete.email}</p>
+                <p>📧 {userToDelete.email || "غير محدد"}</p>
                 <p>📞 {userToDelete.phoneNumber || "غير محدد"}</p>
+                {userToDelete.nationalId && <p>🆔 {userToDelete.nationalId}</p>}
                 <p>🎭 {getRoleText(userToDelete.roles)}</p>
               </div>
             </div>
@@ -928,7 +1055,7 @@ export default function SuperAdminDashboard() {
               <>
                 <Button
                   variant="outline"
-                  onClick={() => setShowDeleteModal(false)}
+                  onClick={handleCancelDelete}
                   disabled={deleteLoading}
                 >
                   إلغاء
@@ -980,11 +1107,13 @@ export default function SuperAdminDashboard() {
           {userToUpdateRole && (
             <div className="bg-gray-50 p-4 rounded-lg arabic-text">
               <h3 className="font-medium text-gray-900 mb-2">
-                {userToUpdateRole.displayName || "غير محدد"}
+                {userToUpdateRole.displayName ||
+                  userToUpdateRole.fullName ||
+                  "غير محدد"}
               </h3>
               <div className="text-sm text-gray-600 space-y-1">
                 <p>👤 {userToUpdateRole.userName || "غير محدد"}</p>
-                <p>📧 {userToUpdateRole.email}</p>
+                <p>📧 {userToUpdateRole.email || "غير محدد"}</p>
                 <p>🎭 الدور الحالي: {getRoleText(userToUpdateRole.roles)}</p>
               </div>
             </div>
@@ -999,11 +1128,15 @@ export default function SuperAdminDashboard() {
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
+                  className="w-full p-2 border border-gray-300 rounded-lg arabic-text focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
+                  <option value="">-- اختر الدور --</option>
                   <option value="User">كاتب (User)</option>
                   <option value="Admin">أدمن (Admin)</option>
                 </select>
+                <p className="text-xs text-gray-500 arabic-text">
+                  يمكنك اختيار دور واحد فقط: إما كاتب (User) أو أدمن (Admin)
+                </p>
               </div>
             </div>
           )}

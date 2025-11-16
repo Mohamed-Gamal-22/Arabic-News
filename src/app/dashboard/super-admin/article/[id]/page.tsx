@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import LogoutButton from "@/components/LogoutButton";
 import { getArticleById } from "@/lib/api";
-import { approveArticle, rejectArticle, deleteArticle } from "@/lib/articles";
+import { approveArticle, rejectArticle } from "@/lib/articles";
 import { ApiArticle } from "@/lib/api";
 
 export default function ReviewArticle({
@@ -113,32 +113,6 @@ export default function ReviewArticle({
     }
   };
 
-  const handleDelete = async () => {
-    if (!article || !session?.accessToken) return;
-
-    if (
-      !confirm(
-        "هل أنت متأكد من حذف هذا المقال نهائياً؟ هذه العملية لا يمكن التراجع عنها."
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      setActionSuccess("");
-      await deleteArticle(article.id, session.accessToken);
-      setActionSuccess("تم حذف المقال بنجاح");
-      setTimeout(() => {
-        router.push("/dashboard/super-admin");
-      }, 1500);
-    } catch (err: any) {
-      setError(err.message || "حدث خطأ في حذف المقال");
-      console.error("Error deleting article:", err);
-    } finally {
-      setProcessing(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -256,36 +230,27 @@ export default function ReviewArticle({
             </Card>
 
             {/* الأزرار */}
-            <div className="flex justify-between items-center">
-              <div className="flex space-x-2 space-x-reverse">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push("/dashboard/super-admin")}
-                  disabled={processing}
-                >
-                  إلغاء
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleReject}
-                  disabled={processing}
-                >
-                  {processing ? "جاري المعالجة..." : "رفض"}
-                </Button>
-                <Button
-                  onClick={handleApprove}
-                  disabled={processing}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {processing ? "جاري المعالجة..." : "قبول المقال"}
-                </Button>
-              </div>
+            <div className="flex justify-end space-x-4 space-x-reverse">
               <Button
-                variant="destructive"
-                onClick={handleDelete}
+                variant="outline"
+                onClick={() => router.push("/dashboard/super-admin")}
                 disabled={processing}
               >
-                حذف نهائي
+                العودة للداشبورد
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleReject}
+                disabled={processing}
+              >
+                {processing ? "جاري المعالجة..." : "رفض"}
+              </Button>
+              <Button
+                onClick={handleApprove}
+                disabled={processing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {processing ? "جاري المعالجة..." : "قبول"}
               </Button>
             </div>
           </>

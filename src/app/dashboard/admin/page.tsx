@@ -21,7 +21,8 @@ export default function AdminDashboard() {
   const [articles, setArticles] = useState<ApiArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [pageIndex, setPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // 5 مقالات في كل صفحة
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
@@ -48,20 +49,35 @@ export default function AdminDashboard() {
         console.log("Fetching articles for role:", role);
 
         // جميع المستخدمين بيحتاجوا التوكن عشان يجيبوا مقالاتهم
-        // الـ API هيرجع بس المقالات الخاصة بالـ user اللي بيبعت توكنه
-        console.log("Fetching articles with token for current user");
-        const response = await getArticles(page, 10, undefined, token);
+        // الـ API هيرجع المقالات حسب Role:
+        // - Writer: مقالاته فقط
+        // - Admin/SuperAdmin: جميع المقالات
+        console.log("Fetching articles with token for role:", role);
+        const response = await getArticles(
+          pageIndex,
+          pageSize,
+          undefined,
+          token
+        );
 
-        if (response && response.data) {
-          const apiTotalCount = response.totalCount || 0;
-          setArticles(response.data);
-          setTotalCount(apiTotalCount);
+        if (response) {
+          // استخدام pageIndex من response، لكن نستخدم pageSize الذي أرسلناه (5)
+          setPageIndex(response.pageIndex || pageIndex);
+          // لا نحدث pageSize من response - نستخدم القيمة التي أرسلناها (5)
+          setTotalCount(response.totalCount || 0);
+          setArticles(response.data || []);
 
           console.log("=== Admin Articles API Response ===");
-          console.log("Page:", page);
-          console.log("Total Count:", apiTotalCount);
-          console.log("Articles in this page:", response.data.length);
-          console.log("Total Pages:", Math.ceil(apiTotalCount / 10));
+          console.log("PageIndex sent:", pageIndex);
+          console.log("PageSize sent:", pageSize);
+          console.log("PageIndex from API:", response.pageIndex);
+          console.log("PageSize from API:", response.pageSize);
+          console.log("Total Count:", response.totalCount);
+          console.log("Articles in this page:", response.data?.length || 0);
+          console.log(
+            "Total Pages:",
+            Math.ceil(response.totalCount / pageSize)
+          );
         } else {
           console.log("No data in response");
           setArticles([]);
@@ -82,16 +98,17 @@ export default function AdminDashboard() {
       console.log("No session yet");
       setLoading(false);
     }
-  }, [session, page]);
+  }, [session, pageIndex, pageSize]);
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
+  const handlePageChange = (newPageIndex: number) => {
+    setPageIndex(newPageIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // حساب الإحصائيات
-  const totalArticles = articles.length;
+  // حساب الإحصائيات - استخدام totalCount من API بدلاً من articles.length
+  const totalArticles = totalCount; // استخدام totalCount من API
   const publishedArticles = articles.filter((a) => a.publishedAt).length;
-  const pendingArticles = articles.length; // سيتم تعديله حسب الـ API
+  const pendingArticles = 0; // سيتم تحديثه حسب API
   const totalWriters = new Set(articles.map((a) => a.authorId)).size;
 
   const getStatusColor = (status: string) => {
@@ -200,10 +217,17 @@ export default function AdminDashboard() {
         {/* جميع المقالات */}
         <Card>
           <CardHeader>
-            <CardTitle className="arabic-heading">جميع المقالات</CardTitle>
-            <CardDescription className="arabic-text">
-              إدارة جميع المقالات في النظام
-            </CardDescription>
+            <div className="flex justify-between items-center flex-row-reverse">
+              <div>
+                <CardTitle className="arabic-heading">جميع المقالات</CardTitle>
+                <CardDescription className="arabic-text">
+                  إدارة جميع المقالات في النظام
+                </CardDescription>
+              </div>
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <Link href="/dashboard/admin/create">إنشاء مقال جديد</Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -245,24 +269,18 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 space-x-reverse">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                          "published"
-                        )}`}
-                      >
-                        {getStatusText("published")}
-                      </span>
                       <Link href={`/dashboard/admin/article/${article.id}`}>
                         <Button variant="outline" size="sm">
                           مراجعة
                         </Button>
                       </Link>
-                      <Button variant="outline" size="sm">
-                        تعديل
-                      </Button>
-                      <Button variant="destructive" size="sm">
-                        حذف
-                      </Button>
+                      <Link
+                        href={`/dashboard/admin/article/${article.id}/edit`}
+                      >
+                        <Button variant="outline" size="sm">
+                          تعديل
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 ))}
@@ -270,11 +288,11 @@ export default function AdminDashboard() {
             )}
 
             {/* Pagination */}
-            {totalCount > 10 && (
+            {totalCount > pageSize && (
               <div className="mt-6 flex justify-center">
                 <Pagination
-                  currentPage={page}
-                  totalPages={Math.ceil(totalCount / 10)}
+                  currentPage={pageIndex}
+                  totalPages={Math.ceil(totalCount / pageSize)}
                   onPageChange={handlePageChange}
                 />
               </div>

@@ -16,8 +16,6 @@ export function Pagination({
   onPageChange,
   className,
 }: PaginationProps) {
-  const pages = [];
-
   // إظهار أرقام الصفحات
   const getVisiblePages = () => {
     const pages: number[] = [];
@@ -47,26 +45,30 @@ export function Pagination({
   };
 
   const visiblePages = getVisiblePages();
+  
+  // تحديد إذا كانت في أول صفحة أو آخر صفحة
+  const isFirstPage = currentPage === 1;
+  const isLastPage = currentPage === totalPages;
 
   return (
     <div className={`flex items-center justify-center gap-2 ${className}`}>
-      {/* زر الصفحة الأولى */}
+      {/* زر الصفحة الأولى - disabled في أول صفحة */}
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(1)}
-        disabled={currentPage === 1}
+        disabled={isFirstPage}
         className="arabic-text"
       >
         الأولى
       </Button>
 
-      {/* زر الصفحة السابقة */}
+      {/* زر الصفحة السابقة - disabled في أول صفحة */}
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
+        disabled={isFirstPage}
         className="arabic-text"
       >
         السابقة
@@ -97,23 +99,23 @@ export function Pagination({
         </>
       )}
 
-      {/* زر الصفحة التالية */}
+      {/* زر الصفحة التالية - disabled في آخر صفحة */}
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
+        disabled={isLastPage}
         className="arabic-text"
       >
         التالية
       </Button>
 
-      {/* زر الصفحة الأخيرة */}
+      {/* زر الصفحة الأخيرة - disabled في آخر صفحة */}
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(totalPages)}
-        disabled={currentPage === totalPages}
+        disabled={isLastPage}
         className="arabic-text"
       >
         الأخيرة

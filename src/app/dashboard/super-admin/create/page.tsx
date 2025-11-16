@@ -30,12 +30,12 @@ import {
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
 import { createArticle } from "@/lib/api";
-import { getCategories, Category } from "@/lib/api";
+import { getCategoriesWithToken } from "@/lib/superAdminApi";
 
-export default function CreateArticlePage() {
+export default function SuperAdminCreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -76,25 +76,20 @@ export default function CreateArticlePage() {
   const [keywordInput, setKeywordInput] = useState("");
 
   useEffect(() => {
-    const fetchAllCategories = async () => {
+    const fetchCategories = async () => {
       if (!session?.accessToken) return;
 
       try {
-        // جلب جميع التصنيفات بدون أي قيود
-        const allCategories = await getCategories();
-        console.log("✅ All categories loaded for writer:", allCategories);
-        setCategories(allCategories);
-        setError(null);
-      } catch (err: any) {
-        console.error("❌ Error fetching categories:", err);
-        setCategories([]);
-        setError("حدث خطأ في جلب التصنيفات. يرجى المحاولة مرة أخرى.");
+        const categoriesData = await getCategoriesWithToken(
+          session.accessToken
+        );
+        setCategories(categoriesData || []);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
       }
     };
 
-    if (session) {
-      fetchAllCategories();
-    }
+    fetchCategories();
   }, [session]);
 
   const handleInputChange = (
@@ -150,29 +145,10 @@ export default function CreateArticlePage() {
       if (!session?.accessToken) {
         setError("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
         setLoading(false);
-        console.error("❌ Missing session accessToken:", session);
-        console.log("Full session object:", JSON.stringify(session, null, 2));
         return;
       }
 
       const token = session.accessToken;
-      console.log("=== Starting Article Creation ===");
-      console.log("User email:", session.user?.email);
-      console.log("User name:", session.user?.name);
-      console.log("User role:", session.user?.role);
-      console.log("Token available:", !!token);
-      console.log("Using token:", token.substring(0, 30) + "...");
-      console.log("Token length:", token.length);
-
-      // التحقق من البيانات قبل الإرسال
-      console.log("Form data summary:", {
-        title: formData.title,
-        slug: formData.slug,
-        categoryId: formData.categoryId,
-        keywords: formData.keywords,
-        hasContent: !!formData.content,
-        hasSummary: !!formData.summary,
-      });
 
       // التحقق من جميع الحقول المطلوبة
       if (!formData.title || !formData.title.trim()) {
@@ -210,8 +186,6 @@ export default function CreateArticlePage() {
         return;
       }
 
-      // لا توجد قيود على التصنيفات - يمكن للكاتب اختيار أي تصنيف
-
       if (!imageFile) {
         setErrorMessage("الصورة مطلوبة");
         setShowErrorModal(true);
@@ -222,27 +196,9 @@ export default function CreateArticlePage() {
       // إنشاء FormData مع الأسماء الصحيحة للـ API
       const formDataToSend = new FormData();
 
-      console.log("Sending data to API:");
-      console.log("Title:", formData.title);
-      console.log("Summary:", formData.summary);
-      console.log("Content:", formData.content);
-      console.log("Content length:", formData.content?.length);
-      console.log("Summary length:", formData.summary?.length);
-      console.log("Slug:", formData.slug);
-      console.log("CategoryId:", formData.categoryId);
-
-      // التحقق من البيانات الفعلية
-      console.log("=== ACTUAL DATA BEING SENT ===");
-      console.log("Title:", formData.title);
-      console.log("Summary:", formData.summary || "EMPTY!");
-      console.log("Content:", formData.content || "EMPTY!");
-
       // استخدام الأسماء الصحيحة حسب API .NET - CategoryId يجب أن يكون رقم (number)
-      // formData.categoryId هو string من dropdown، نحوله إلى number
-      const categoryId = formData.categoryId
-        ? Number(formData.categoryId)
-        : null;
-
+      const categoryId = formData.categoryId ? Number(formData.categoryId) : null;
+      
       if (!categoryId || isNaN(categoryId)) {
         setErrorMessage("يجب اختيار قسم للمقال");
         setShowErrorModal(true);
@@ -254,44 +210,18 @@ export default function CreateArticlePage() {
       formDataToSend.append("Content", formData.content || "");
       formDataToSend.append("Summary", formData.summary || "");
       formDataToSend.append("Slug", formData.slug);
-      // CategoryId يُرسل كـ number في FormData (FormData سيقوم بتحويله تلقائياً)
-      formDataToSend.append("CategoryId", categoryId.toString()); // FormData يحتاج string لكن API يتوقع number
-
+      formDataToSend.append("CategoryId", categoryId.toString());
+      
       console.log("CategoryId to send (as number):", categoryId);
-      console.log("CategoryId type:", typeof categoryId);
-
-      console.log("After FormData append:");
-      console.log("Content in FormData:", formData.content || "MISSING!");
-      console.log("Summary in FormData:", formData.summary || "MISSING!");
 
       if (imageFile) {
         formDataToSend.append("Image", imageFile);
-        console.log(
-          "Image file:",
-          imageFile.name,
-          imageFile.size,
-          imageFile.type
-        );
       }
 
       // إضافة Keywords كـ string مفصولة بفواصل
       if (formData.keywords && formData.keywords.trim()) {
-        // التأكد من أن Keywords string مفصولة بفواصل
         const keywordsString = formData.keywords.trim();
         formDataToSend.append("Keywords", keywordsString);
-        console.log("Keywords:", keywordsString);
-      }
-
-      // طباعة محتوى FormData للتحقق
-      console.log("=== FINAL FORMDATA BEFORE SENDING ===");
-      for (const [key, value] of formDataToSend.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File(${value.name}, ${value.size} bytes)`);
-        } else {
-          console.log(
-            `${key}: "${value}" (length: ${value.toString().length})`
-          );
-        }
       }
 
       const createdArticle = await createArticle(formDataToSend, token);
@@ -314,7 +244,7 @@ export default function CreateArticlePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">أ</span>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
@@ -407,32 +337,25 @@ export default function CreateArticlePage() {
                 <Label htmlFor="categoryId" className="arabic-text">
                   القسم *
                 </Label>
-                {categories.length > 0 ? (
-                  <Select
-                    value={formData.categoryId}
-                    onValueChange={handleSelectChange}
-                    required
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="اختر القسم" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="mt-1 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 arabic-text">
-                    ⚠️ لا توجد تصنيفات متاحة. يرجى التواصل مع المدير لتعيين
-                    التصنيفات المسموحة لك.
-                  </div>
-                )}
+                <Select
+                  value={formData.categoryId}
+                  onValueChange={handleSelectChange}
+                  required
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="اختر القسم" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category: any) => (
+                      <SelectItem
+                        key={category.id}
+                        value={category.id.toString()}
+                      >
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -528,7 +451,7 @@ export default function CreateArticlePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push("/dashboard/writer")}
+                  onClick={() => router.push("/dashboard/super-admin")}
                   disabled={loading}
                 >
                   إلغاء
@@ -558,7 +481,7 @@ export default function CreateArticlePage() {
             <Button
               onClick={() => {
                 setShowSuccessModal(false);
-                router.push("/dashboard/writer");
+                router.push("/dashboard/super-admin?tab=articles");
               }}
               className="bg-green-600 hover:bg-green-700"
             >

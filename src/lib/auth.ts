@@ -53,6 +53,8 @@ export const authOptions: NextAuthOptions = {
           }
 
           const data = await response.json();
+          console.log("=== Login Response Data ===");
+          console.log("Full login response:", data);
 
           // التحقق من وجود البيانات المطلوبة
           if (!data.email || !data.displayName || !data.token) {
@@ -62,6 +64,20 @@ export const authOptions: NextAuthOptions = {
 
           // استخراج الصلاحيات من JWT token
           const decodedToken = decodeJWT(data.token);
+          console.log("Decoded JWT from login:", decodedToken);
+          
+          // استخراج User ID من JWT token
+          // قد يكون موجود في claims مختلفة
+          const userId = 
+            decodedToken?.sub || 
+            decodedToken?.nameid ||
+            decodedToken?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/nameidentifier"] ||
+            decodedToken?.["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+            data.id || // في بعض الحالات قد يكون موجود في login response
+            data.email; // fallback إلى email
+            
+          console.log("Extracted User ID from JWT:", userId);
+          
           let role = "writer"; // افتراضي للكاتب العادي
 
           if (
@@ -86,12 +102,20 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
+          // التحقق من وجود categories أو categoryIds في response
+          console.log("Categories in login response:", data.categories);
+          console.log("CategoryIds in login response:", data.categoryIds);
+          console.log("User ID from login response data:", data.id);
+
           return {
-            id: decodedToken?.sub || data.email,
+            id: userId, // استخدام الـ ID المستخرج من JWT
             email: data.email,
             name: data.displayName,
             role: role,
             token: data.token,
+            // حفظ categories إذا كانت موجودة في response
+            ...(data.categories && { categories: data.categories }),
+            ...(data.categoryIds && { categoryIds: data.categoryIds }),
           };
         } catch (error) {
           console.error("خطأ في المصادقة:", error);
@@ -116,16 +140,28 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.accessToken = user.token;
+        
+        // حفظ categories و categoryIds إذا كانت موجودة
+        if ((user as any).categories) {
+          (token as any).categories = (user as any).categories;
+        }
+        if ((user as any).categoryIds) {
+          (token as any).categoryIds = (user as any).categoryIds;
+        }
 
         console.log("Token set successfully:", {
           hasAccessToken: !!token.accessToken,
           tokenLength: token.accessToken?.length,
+          hasCategories: !!(token as any).categories,
+          hasCategoryIds: !!(token as any).categoryIds,
         });
       } else {
         console.log("=== JWT Callback - Subsequent Request ===");
         console.log("Token ID:", token.id);
         console.log("Token Role:", token.role);
         console.log("Has AccessToken:", !!token.accessToken);
+        console.log("Token Categories:", (token as any).categories);
+        console.log("Token CategoryIds:", (token as any).categoryIds);
       }
 
       return token;
@@ -136,12 +172,25 @@ export const authOptions: NextAuthOptions = {
       console.log("Token Role:", token.role);
       console.log("Has AccessToken:", !!token.accessToken);
       console.log("AccessToken length:", token.accessToken?.length);
+      console.log("Token Categories:", (token as any).categories);
+      console.log("Token CategoryIds:", (token as any).categoryIds);
 
       if (token && token.accessToken) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.accessToken = token.accessToken as string;
+        
+        // حفظ categories و categoryIds في session إذا كانت موجودة
+        if ((token as any).categories) {
+          (session.user as any).categories = (token as any).categories;
+        }
+        if ((token as any).categoryIds) {
+          (session.user as any).categoryIds = (token as any).categoryIds;
+        }
+        
         console.log("✅ Session successfully configured");
+        console.log("Session Categories:", (session.user as any).categories);
+        console.log("Session CategoryIds:", (session.user as any).categoryIds);
       } else {
         console.error("❌ Session missing accessToken!");
         console.log("Full token object:", JSON.stringify(token, null, 2));
