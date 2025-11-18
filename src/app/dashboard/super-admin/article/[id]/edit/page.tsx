@@ -327,7 +327,7 @@ export default function EditArticlePage({
                   </Select>
                 </div>
 
-                <div className="flex justify-end space-x-4 space-x-reverse">
+                <div className="flex justify-end gap-3 space-x-reverse">
                   <Button
                     type="button"
                     variant="outline"

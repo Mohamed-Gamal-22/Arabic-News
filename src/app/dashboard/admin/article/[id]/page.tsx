@@ -13,8 +13,11 @@ import {
 } from "@/components/ui/card";
 import LogoutButton from "@/components/LogoutButton";
 import { getArticleById } from "@/lib/api";
-import { approveArticle, rejectArticle } from "@/lib/articles";
+import { approveArticleUnpend, deleteArticle } from "@/lib/articles";
 import { ApiArticle } from "@/lib/api";
+import { getCategoriesWithToken } from "@/lib/superAdminApi";
+import Link from "next/link";
+import { AlertModal } from "@/components/ui/alert-modal";
 
 export default function ReviewArticle({
   params,
@@ -25,9 +28,13 @@ export default function ReviewArticle({
   const { data: session } = useSession();
   const resolvedParams = use(params);
   const [article, setArticle] = useState<ApiArticle | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState<string>("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -50,10 +57,14 @@ export default function ReviewArticle({
           return;
         }
 
-        const articleData = await getArticleById(articleId, token);
+        const [articleData, categoriesData] = await Promise.all([
+          getArticleById(articleId, token),
+          getCategoriesWithToken(token),
+        ]);
 
         if (articleData) {
           setArticle(articleData);
+          setCategories(categoriesData || []);
         } else {
           setError("لم يتم العثور على المقال");
         }
@@ -71,36 +82,67 @@ export default function ReviewArticle({
   }, [session, resolvedParams.id]);
 
   const handleApprove = async () => {
-    if (!article || !session?.accessToken) return;
+    if (!article || !session?.accessToken || !categories.length) return;
 
     try {
       setProcessing(true);
-      await approveArticle(article.id, session.accessToken);
-      alert("تم قبول المقال بنجاح");
-      router.push("/dashboard/admin");
+      setActionSuccess("");
+      setError(null);
+
+      // الحصول على CategoryId من categoryName
+      const currentCategory = categories.find(
+        (cat: any) => cat.name === article.categoryName
+      );
+
+      if (!currentCategory) {
+        throw new Error("لم يتم العثور على التصنيف");
+      }
+
+      const approveData = {
+        Title: article.title,
+        Content: article.content,
+        Summary: article.summary,
+        Slug: article.slug,
+        CategoryId: currentCategory.id,
+        IsTrending: article.isTrending || false,
+        TrendPeriodInDays: 1,
+        IsPending: false,
+      };
+
+      await approveArticleUnpend(article.id, approveData, session.accessToken);
+      setActionSuccess("تم الموافقة على المقال بنجاح");
+      setShowSuccessModal(true);
     } catch (err: any) {
-      alert(err.message || "حدث خطأ في قبول المقال");
+      setError(err.message || "حدث خطأ في الموافقة على المقال");
+      setShowErrorModal(true);
       console.error("Error approving article:", err);
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleReject = async () => {
+  const handleDelete = async () => {
     if (!article || !session?.accessToken) return;
 
-    if (!confirm("هل أنت متأكد من رفض هذا المقال؟")) {
+    if (
+      !confirm(
+        "هل أنت متأكد من رفض وحذف هذه المقالة؟ لا يمكن التراجع عن هذا الإجراء."
+      )
+    ) {
       return;
     }
 
     try {
       setProcessing(true);
-      await rejectArticle(article.id, session.accessToken);
-      alert("تم رفض المقال بنجاح");
-      router.push("/dashboard/admin");
+      setActionSuccess("");
+      setError(null);
+      await deleteArticle(article.id, session.accessToken);
+      setActionSuccess("تم رفض وحذف المقال بنجاح");
+      setShowSuccessModal(true);
     } catch (err: any) {
-      alert(err.message || "حدث خطأ في رفض المقال");
-      console.error("Error rejecting article:", err);
+      setError(err.message || "حدث خطأ في حذف المقال");
+      setShowErrorModal(true);
+      console.error("Error deleting article:", err);
     } finally {
       setProcessing(false);
     }
@@ -144,6 +186,38 @@ export default function ReviewArticle({
           </div>
         ) : article ? (
           <>
+            {/* Success Modal */}
+            <AlertModal
+              open={showSuccessModal}
+              onOpenChange={setShowSuccessModal}
+              variant="success"
+              message={actionSuccess}
+              actionButton={{
+                label: "العودة للداشبورد",
+                onClick: () => {
+                  setShowSuccessModal(false);
+                  setActionSuccess("");
+                  router.push("/dashboard/admin");
+                },
+              }}
+            />
+
+            {/* Error Modal */}
+            <AlertModal
+              open={showErrorModal}
+              onOpenChange={setShowErrorModal}
+              variant="error"
+              message={error || ""}
+              actionButton={{
+                label: "إغلاق",
+                onClick: () => {
+                  setShowErrorModal(false);
+                  setError(null);
+                },
+                variant: "outline",
+              }}
+            />
+
             {/* معلومات المقال */}
             <Card className="mb-6">
               <CardHeader>
@@ -204,7 +278,7 @@ export default function ReviewArticle({
             </Card>
 
             {/* الأزرار */}
-            <div className="flex justify-end space-x-4 space-x-reverse">
+            <div className="flex justify-end gap-3 space-x-reverse">
               <Button
                 variant="outline"
                 onClick={() => router.push("/dashboard/admin")}
@@ -214,17 +288,22 @@ export default function ReviewArticle({
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleReject}
+                onClick={handleDelete}
                 disabled={processing}
               >
-                {processing ? "جاري المعالجة..." : "رفض"}
+                {processing ? "جاري المعالجة..." : "رفض المقالة وحذفها"}
+              </Button>
+              <Button asChild variant="outline" disabled={processing}>
+                <Link href={`/dashboard/admin/article/${article.id}/edit`}>
+                  تعديل
+                </Link>
               </Button>
               <Button
                 onClick={handleApprove}
-                disabled={processing}
+                disabled={processing || !categories.length}
                 className="bg-green-600 hover:bg-green-700"
               >
-                {processing ? "جاري المعالجة..." : "قبول"}
+                {processing ? "جاري المعالجة..." : "موافق"}
               </Button>
             </div>
           </>

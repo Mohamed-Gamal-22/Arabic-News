@@ -214,7 +214,7 @@ export default function CreateArticleForm() {
 
             {/* أزرار الإجراءات */}
             <div className="flex items-center justify-between pt-6 border-t">
-              <div className="flex space-x-2 space-x-reverse">
+              <div className="flex gap-3 space-x-reverse">
                 <Button
                   type="button"
                   variant="outline"

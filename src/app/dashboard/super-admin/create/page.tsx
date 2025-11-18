@@ -447,7 +447,7 @@ export default function SuperAdminCreateArticlePage() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-4 space-x-reverse">
+              <div className="flex justify-end gap-3 space-x-reverse">
                 <Button
                   type="button"
                   variant="outline"
@@ -469,15 +469,17 @@ export default function SuperAdminCreateArticlePage() {
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-green-600">
-              <span>✅</span>
+            <DialogTitle className="flex items-center gap-3 space-x-reverse text-green-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
               <span>تمام تم الإضافة</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
               تم إنشاء المقال بنجاح!
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+          <div className="flex justify-end gap-3 space-x-reverse mt-4">
             <Button
               onClick={() => {
                 setShowSuccessModal(false);
@@ -495,15 +497,17 @@ export default function SuperAdminCreateArticlePage() {
       <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-red-600">
-              <span>⚠️</span>
+            <DialogTitle className="flex items-center gap-3 space-x-reverse text-red-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
               <span>حقل مطلوب</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
               {errorMessage}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+          <div className="flex justify-end gap-3 space-x-reverse mt-4">
             <Button
               onClick={() => {
                 setShowErrorModal(false);

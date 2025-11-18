@@ -32,6 +32,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pagination } from "@/components/ui/pagination";
 import LogoutButton from "@/components/LogoutButton";
+import { Alert } from "@/components/ui/alert";
 import {
   getUsers,
   deleteUser,
@@ -45,6 +46,8 @@ import {
   getArticleById,
   updateArticle,
   ApiArticle,
+  getCurrentUser,
+  CurrentUserProfile,
 } from "@/lib/api";
 
 export default function SuperAdminDashboard() {
@@ -53,6 +56,9 @@ export default function SuperAdminDashboard() {
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [articles, setArticles] = useState<ApiArticle[]>([]);
+  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(
+    null
+  );
   const [articlesPageIndex, setArticlesPageIndex] = useState(1);
   const [articlesPageSize, setArticlesPageSize] = useState(5);
   const [articlesTotal, setArticlesTotal] = useState(0);
@@ -112,6 +118,26 @@ export default function SuperAdminDashboard() {
   const [deleteResultType, setDeleteResultType] = useState<"success" | "error">(
     "success"
   );
+
+  // جلب بيانات المستخدم الحالي
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!session?.accessToken) return;
+
+      try {
+        const userData = await getCurrentUser(session.accessToken);
+        if (userData) {
+          setCurrentUser(userData);
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    };
+
+    if (session) {
+      fetchUserData();
+    }
+  }, [session]);
 
   // قراءة الـ tab من URL query parameter
   useEffect(() => {
@@ -524,7 +550,17 @@ export default function SuperAdminDashboard() {
                 <span className="text-white font-bold text-lg">أ</span>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
-                داشبورد السوبر أدمن
+                {currentUser ? (
+                  <span>
+                    مرحبا{" "}
+                    {currentUser.displayName ||
+                      currentUser.fullName ||
+                      currentUser.userName}{" "}
+                    (سوبر أدمن)
+                  </span>
+                ) : (
+                  "داشبورد السوبر أدمن"
+                )}
               </h1>
             </div>
             <LogoutButton />
@@ -535,38 +571,16 @@ export default function SuperAdminDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Success/Cancel Alert */}
         {showDeleteResultAlert && (deleteSuccess || deleteCancelMessage) && (
-          <div
-            className={`border px-4 py-3 rounded-lg mb-6 arabic-text ${
-              deleteSuccess
-                ? "bg-green-50 border-green-200 text-green-700"
-                : "bg-blue-50 border-blue-200 text-blue-700"
-            }`}
+          <Alert
+            variant={deleteSuccess ? "success" : "info"}
+            onClose={() => {
+              setShowDeleteResultAlert(false);
+              setDeleteSuccess("");
+              setDeleteCancelMessage("");
+            }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <span
-                  className={deleteSuccess ? "text-green-600" : "text-blue-600"}
-                >
-                  {deleteSuccess ? "✅" : "ℹ️"}
-                </span>
-                <span>{deleteSuccess || deleteCancelMessage}</span>
-              </div>
-              <button
-                onClick={() => {
-                  setShowDeleteResultAlert(false);
-                  setDeleteSuccess("");
-                  setDeleteCancelMessage("");
-                }}
-                className={
-                  deleteSuccess
-                    ? "text-green-600 hover:text-green-800"
-                    : "text-blue-600 hover:text-blue-800"
-                }
-              >
-                ✕
-              </button>
-            </div>
-          </div>
+            {deleteSuccess || deleteCancelMessage}
+          </Alert>
         )}
 
         {/* الإحصائيات العامة */}
@@ -739,13 +753,6 @@ export default function SuperAdminDashboard() {
                           >
                             <Button variant="outline" size="sm">
                               مراجعة
-                            </Button>
-                          </Link>
-                          <Link
-                            href={`/dashboard/super-admin/article/${article.id}/edit`}
-                          >
-                            <Button variant="outline" size="sm">
-                              تعديل
                             </Button>
                           </Link>
                         </div>
@@ -1032,22 +1039,16 @@ export default function SuperAdminDashboard() {
 
           {/* Success Message */}
           {deleteSuccess && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg arabic-text">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <span className="text-green-600">✅</span>
-                <span>{deleteSuccess}</span>
-              </div>
-            </div>
+            <Alert variant="success" onClose={() => setDeleteSuccess("")}>
+              {deleteSuccess}
+            </Alert>
           )}
 
           {/* Error Message */}
           {deleteError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg arabic-text">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <span className="text-red-600">❌</span>
-                <span>{deleteError}</span>
-              </div>
-            </div>
+            <Alert variant="error" onClose={() => setDeleteError("")}>
+              {deleteError}
+            </Alert>
           )}
 
           <div className="flex justify-end gap-4 mt-4">
@@ -1179,11 +1180,39 @@ export default function SuperAdminDashboard() {
         <DialogContent className="arabic-text">
           <DialogHeader>
             <DialogTitle
-              className={`flex items-center space-x-2 space-x-reverse ${
+              className={`flex items-center gap-3 space-x-reverse ${
                 roleResultType === "success" ? "text-green-600" : "text-red-600"
               }`}
             >
-              <span>{roleResultType === "success" ? "✅" : "❌"}</span>
+              {roleResultType === "success" ? (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              )}
               <span>
                 {roleResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
               </span>
@@ -1193,7 +1222,7 @@ export default function SuperAdminDashboard() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+          <div className="flex justify-end gap-3 space-x-reverse mt-4">
             <Button
               variant="outline"
               onClick={() => setShowRoleResultModal(false)}
@@ -1342,13 +1371,41 @@ export default function SuperAdminDashboard() {
         <DialogContent className="arabic-text">
           <DialogHeader>
             <DialogTitle
-              className={`flex items-center space-x-2 space-x-reverse ${
+              className={`flex items-center gap-3 space-x-reverse ${
                 categoryResultType === "success"
                   ? "text-green-600"
                   : "text-red-600"
               }`}
             >
-              <span>{categoryResultType === "success" ? "✅" : "❌"}</span>
+              {categoryResultType === "success" ? (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              )}
               <span>
                 {categoryResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
               </span>
@@ -1358,7 +1415,7 @@ export default function SuperAdminDashboard() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+          <div className="flex justify-end gap-3 space-x-reverse mt-4">
             <Button
               variant="outline"
               onClick={() => setShowCategoryResultModal(false)}
@@ -1435,8 +1492,42 @@ export default function SuperAdminDashboard() {
       >
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-blue-600">
-              <span>{deleteResultType === "success" ? "✅" : "❌"}</span>
+            <DialogTitle
+              className={`flex items-center gap-3 space-x-reverse ${
+                deleteResultType === "success"
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              {deleteResultType === "success" ? (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              )}
               <span>
                 {deleteResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
               </span>

@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import LogoutButton from "@/components/LogoutButton";
-import { getArticles } from "@/lib/api";
+import { getArticles, getCurrentUser, CurrentUserProfile } from "@/lib/api";
 import { ApiArticle } from "@/lib/api";
 import { Pagination } from "@/components/ui/pagination";
 
@@ -21,11 +21,31 @@ export default function WriterDashboard() {
   const router = useRouter();
   const { data: session } = useSession();
   const [articles, setArticles] = useState<ApiArticle[]>([]);
+  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(5); // 5 مقالات في كل صفحة
   const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!session?.accessToken) return;
+
+      try {
+        const userData = await getCurrentUser(session.accessToken);
+        if (userData) {
+          setCurrentUser(userData);
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    };
+
+    if (session) {
+      fetchUserData();
+    }
+  }, [session]);
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -99,7 +119,13 @@ export default function WriterDashboard() {
                 <span className="text-white font-bold text-lg">أ</span>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
-                داشبورد الكاتب
+                {currentUser ? (
+                  <span>
+                    مرحبا {currentUser.displayName || currentUser.fullName || currentUser.userName} (كاتب)
+                  </span>
+                ) : (
+                  "داشبورد الكاتب"
+                )}
               </h1>
             </div>
             <LogoutButton />

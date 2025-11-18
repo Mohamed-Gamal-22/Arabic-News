@@ -68,6 +68,30 @@ export interface User {
   updatedAt: string;
 }
 
+// واجهة Category من بيانات المستخدم
+export interface UserCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  parentId: number | null;
+}
+
+// واجهة بيانات المستخدم الحالي من /api/authentication/me
+export interface CurrentUserProfile {
+  id: string;
+  userName: string;
+  email: string;
+  displayName: string;
+  phoneNumber: string;
+  nationalId: string;
+  fullName: string;
+  imageUrl: string;
+  roles: string[];
+  categoryIds: number[];
+  categories: UserCategory[];
+}
+
 // واجهة User من الـ API الجديد
 export interface ApiUser {
   id: string;
@@ -340,6 +364,47 @@ export const getArticleById = async (
   }
 };
 
+// دالة لجلب مقال واحد بالـ Slug
+export const getArticleBySlug = async (
+  slug: string,
+  token?: string
+): Promise<ApiArticle | null> => {
+  try {
+    const url = `https://newswebsite.runasp.net/api/article/slug/${slug}`;
+    console.log("Fetching article by slug from:", url);
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    // إضافة التوكن إذا كان متوفر
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers,
+    });
+
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Article data received:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching article by slug:", error);
+    return null;
+  }
+};
+
 // دالة لتحديث مقال
 export const updateArticle = async (
   articleId: string,
@@ -544,6 +609,41 @@ export const createArticle = async (
   } catch (error) {
     console.error("Error creating article:", error);
     throw error;
+  }
+};
+
+// دالة لجلب بيانات المستخدم الحالي
+export const getCurrentUser = async (
+  token: string
+): Promise<CurrentUserProfile | null> => {
+  try {
+    const url = `https://newswebsite.runasp.net/api/authentication/me`;
+    console.log("Fetching current user from:", url);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Current user data received:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    return null;
   }
 };
 
