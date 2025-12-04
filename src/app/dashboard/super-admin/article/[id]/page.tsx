@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Card,
   CardContent,
@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import LogoutButton from "@/components/LogoutButton";
+import BackToDashboardButton from "@/components/BackToDashboardButton";
+import ArticleApprovalModal from "@/components/ArticleApprovalModal";
 import { getArticleById } from "@/lib/api";
 import { approveArticleUnpend, deleteArticle } from "@/lib/articles";
 import { ApiArticle } from "@/lib/api";
@@ -35,6 +37,7 @@ export default function ReviewArticle({
   const [actionSuccess, setActionSuccess] = useState<string>("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -78,7 +81,15 @@ export default function ReviewArticle({
     }
   }, [session, resolvedParams.id]);
 
-  const handleApprove = async () => {
+  const handleApproveClick = () => {
+    if (!article || !session?.accessToken || !categories.length) return;
+    setShowApprovalModal(true);
+  };
+
+  const handleApproveSubmit = async (approvalData: {
+    IsTrending: boolean;
+    TrendPeriodInDays: number;
+  }) => {
     if (!article || !session?.accessToken || !categories.length) return;
 
     try {
@@ -101,8 +112,8 @@ export default function ReviewArticle({
         Summary: article.summary,
         Slug: article.slug,
         CategoryId: currentCategory.id,
-        IsTrending: article.isTrending || false,
-        TrendPeriodInDays: 1,
+        IsTrending: approvalData.IsTrending,
+        TrendPeriodInDays: approvalData.TrendPeriodInDays,
         IsPending: false,
       };
 
@@ -113,6 +124,7 @@ export default function ReviewArticle({
       setError(err.message || "حدث خطأ في الموافقة على المقال");
       setShowErrorModal(true);
       console.error("Error approving article:", err);
+      throw err; // Re-throw to let modal handle it
     } finally {
       setProcessing(false);
     }
@@ -159,7 +171,10 @@ export default function ReviewArticle({
                 مراجعة المقال - السوبر أدمن
               </h1>
             </div>
-            <LogoutButton />
+            <div className="flex items-center gap-2 space-x-reverse">
+              <BackToDashboardButton fallbackPath="/dashboard/super-admin?tab=articles" />
+              <LogoutButton />
+            </div>
           </div>
         </div>
       </header>
@@ -174,12 +189,6 @@ export default function ReviewArticle({
         ) : error ? (
           <div className="text-center py-12">
             <p className="text-red-600 arabic-text">{error}</p>
-            <Button
-              onClick={() => router.push("/dashboard/super-admin")}
-              className="mt-4"
-            >
-              العودة للداشبورد
-            </Button>
           </div>
         ) : article ? (
           <>
@@ -190,7 +199,7 @@ export default function ReviewArticle({
               variant="success"
               message={actionSuccess}
               actionButton={{
-                label: "العودة للداشبورد",
+                label: "تم",
                 onClick: () => {
                   setShowSuccessModal(false);
                   setActionSuccess("");
@@ -213,6 +222,14 @@ export default function ReviewArticle({
                 },
                 variant: "outline",
               }}
+            />
+
+            {/* Approval Modal */}
+            <ArticleApprovalModal
+              open={showApprovalModal}
+              onOpenChange={setShowApprovalModal}
+              onApprove={handleApproveSubmit}
+              loading={processing}
             />
 
             {/* معلومات المقال */}
@@ -276,36 +293,29 @@ export default function ReviewArticle({
 
             {/* الأزرار */}
             <div className="flex justify-end gap-3 space-x-reverse">
-              <Button
-                variant="outline"
-                onClick={() =>
-                  router.push("/dashboard/super-admin?tab=articles")
-                }
-                disabled={processing}
-              >
-                العودة للداشبورد
-              </Button>
-              <Button
+              <LoadingButton
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={processing}
+                loading={processing}
+                loadingText="جاري المعالجة..."
               >
-                {processing ? "جاري المعالجة..." : "رفض المقالة وحذفها"}
-              </Button>
-              <Button asChild variant="outline" disabled={processing}>
+                رفض المقالة وحذفها
+              </LoadingButton>
+              <LoadingButton asChild variant="outline" disabled={processing}>
                 <Link
                   href={`/dashboard/super-admin/article/${article.id}/edit`}
                 >
                   تعديل
                 </Link>
-              </Button>
-              <Button
-                onClick={handleApprove}
-                disabled={processing || !categories.length}
+              </LoadingButton>
+              <LoadingButton
+                onClick={handleApproveClick}
+                loading={processing}
+                disabled={!categories.length}
                 className="bg-green-600 hover:bg-green-700"
               >
-                {processing ? "جاري المعالجة..." : "موافق"}
-              </Button>
+                موافقة
+              </LoadingButton>
             </div>
           </>
         ) : null}

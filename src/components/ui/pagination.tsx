@@ -20,9 +20,10 @@ export function Pagination({
   const getVisiblePages = () => {
     const pages: number[] = [];
     const maxVisible = 5;
+    const safeTotalPages = Math.max(1, totalPages);
 
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
+    if (safeTotalPages <= maxVisible) {
+      for (let i = 1; i <= safeTotalPages; i++) {
         pages.push(i);
       }
     } else {
@@ -30,8 +31,8 @@ export function Pagination({
         for (let i = 1; i <= 5; i++) {
           pages.push(i);
         }
-      } else if (currentPage >= totalPages - 2) {
-        for (let i = totalPages - 4; i <= totalPages; i++) {
+      } else if (currentPage >= safeTotalPages - 2) {
+        for (let i = safeTotalPages - 4; i <= safeTotalPages; i++) {
           pages.push(i);
         }
       } else {
@@ -45,10 +46,11 @@ export function Pagination({
   };
 
   const visiblePages = getVisiblePages();
-  
+  const safeTotalPages = Math.max(1, totalPages);
+
   // تحديد إذا كانت في أول صفحة أو آخر صفحة
-  const isFirstPage = currentPage === 1;
-  const isLastPage = currentPage === totalPages;
+  const isFirstPage = currentPage <= 1;
+  const isLastPage = currentPage >= safeTotalPages;
 
   return (
     <div className={`flex items-center justify-center gap-2 ${className}`}>

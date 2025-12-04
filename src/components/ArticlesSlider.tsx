@@ -38,9 +38,9 @@ export default function ArticlesSlider({ articles }: ArticlesSliderProps) {
     `https://picsum.photos/1200/800?random=${currentArticle.id}`;
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full max-w-7xl lg:max-w-[90rem] xl:max-w-[95rem] mx-auto">
       {/* الخبر المميز */}
-      <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden rounded-xl mb-4">
+      <div className="relative w-full h-[200px] sm:h-[260px] md:h-[320px] lg:h-[380px] overflow-hidden rounded-3xl shadow-2xl mb-6">
         <Link href={`/news/${currentArticle.slug}`}>
           <div className="relative w-full h-full cursor-pointer">
             <Image
@@ -104,13 +104,15 @@ export default function ArticlesSlider({ articles }: ArticlesSliderProps) {
           →
         </button>
 
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 space-x-reverse">
+        <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
           {articles.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                index === currentSlide ? "bg-white" : "bg-white/50"
+              className={`w-3 h-3 rounded-full border border-white/60 transition-all ${
+                index === currentSlide
+                  ? "bg-white shadow-lg scale-110"
+                  : "bg-white/40 hover:bg-white/70"
               }`}
             />
           ))}
@@ -119,7 +121,7 @@ export default function ArticlesSlider({ articles }: ArticlesSliderProps) {
 
       {/* الصور الصغيرة */}
       {articles.length > 1 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-5 px-1">
           {articles.slice(0, 4).map((article, index) => {
             const thumbImageUrl =
               article.imageUrl ||

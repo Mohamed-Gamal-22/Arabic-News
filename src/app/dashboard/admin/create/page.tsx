@@ -29,13 +29,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle, getCurrentUser, CurrentUserProfile, UserCategory } from "@/lib/api";
+import { createArticle } from "@/lib/api";
+import { getCategories, Category } from "@/lib/api";
+import { getCategoriesWithToken } from "@/lib/superAdminApi";
 
 export default function AdminCreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [categories, setCategories] = useState<UserCategory[]>([]);
-  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -76,31 +77,24 @@ export default function AdminCreateArticlePage() {
   const [keywordInput, setKeywordInput] = useState("");
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchAllCategories = async () => {
       if (!session?.accessToken) return;
 
       try {
-        // جلب بيانات المستخدم الحالي
-        const userData = await getCurrentUser(session.accessToken);
-        
-        if (userData) {
-          console.log("✅ User data loaded for admin:", userData);
-          setCurrentUser(userData);
-          // استخدام categories من بيانات المستخدم (المسموح بها فقط)
-          setCategories(userData.categories || []);
-          setError(null);
-        } else {
-          setError("حدث خطأ في جلب بيانات المستخدم. يرجى المحاولة مرة أخرى.");
-        }
+        // جلب جميع التصنيفات بدون أي قيود
+        const allCategories = await getCategoriesWithToken(session.accessToken);
+        console.log("✅ All categories loaded for admin:", allCategories);
+        setCategories(allCategories || []);
+        setError(null);
       } catch (err: any) {
-        console.error("❌ Error fetching user data:", err);
+        console.error("❌ Error fetching categories:", err);
         setCategories([]);
-        setError(err.message || "حدث خطأ في جلب البيانات. يرجى المحاولة مرة أخرى.");
+        setError("حدث خطأ في جلب التصنيفات. يرجى المحاولة مرة أخرى.");
       }
     };
 
     if (session) {
-      fetchUserData();
+      fetchAllCategories();
     }
   }, [session]);
 
@@ -271,15 +265,7 @@ export default function AdminCreateArticlePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="arabic-heading">
-              {currentUser ? (
-                <div className="flex items-center gap-3 space-x-reverse">
-                  <span>مرحبا {currentUser.displayName || currentUser.fullName || currentUser.userName}</span>
-                </div>
-              ) : (
-                "إنشاء مقال جديد"
-              )}
-            </CardTitle>
+            <CardTitle className="arabic-heading">إنشاء مقال جديد</CardTitle>
             <CardDescription className="arabic-text">
               قم بملء البيانات التالية لإنشاء مقال جديد
             </CardDescription>
@@ -467,7 +453,7 @@ export default function AdminCreateArticlePage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-3 space-x-reverse">
+              <div className="flex justify-end space-x-4 space-x-reverse">
                 <Button
                   type="button"
                   variant="outline"
@@ -489,17 +475,15 @@ export default function AdminCreateArticlePage() {
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 space-x-reverse text-green-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-green-600">
+              <span>✅</span>
               <span>تمام تم الإضافة</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
               تم إنشاء المقال بنجاح!
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3 space-x-reverse mt-4">
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
             <Button
               onClick={() => {
                 setShowSuccessModal(false);
@@ -517,17 +501,15 @@ export default function AdminCreateArticlePage() {
       <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 space-x-reverse text-red-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-red-600">
+              <span>⚠️</span>
               <span>حقل مطلوب</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
               {errorMessage}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3 space-x-reverse mt-4">
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
             <Button
               onClick={() => {
                 setShowErrorModal(false);

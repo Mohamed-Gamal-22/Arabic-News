@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -11,7 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { LoadingButton } from "@/components/ui/loading-button";
 import LogoutButton from "@/components/LogoutButton";
+import BackToDashboardButton from "@/components/BackToDashboardButton";
 import { getArticleById } from "@/lib/api";
 import { ApiArticle } from "@/lib/api";
 
@@ -21,6 +25,7 @@ export default function ArticleDetails({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const resolvedParams = use(params);
   const [article, setArticle] = useState<ApiArticle | null>(null);
@@ -57,6 +62,17 @@ export default function ArticleDetails({
             setLoading(false);
             return;
           }
+          
+          // Debug: طباعة بيانات المقالة
+          console.log("=== Writer Article Data ===");
+          console.log("Article ID:", articleData.id);
+          console.log("isPending:", articleData.isPending);
+          console.log("isPending type:", typeof articleData.isPending);
+          console.log("isPending === true:", articleData.isPending === true);
+          console.log("isPending === false:", articleData.isPending === false);
+          console.log("publishedAt:", articleData.publishedAt);
+          console.log("Full article data:", JSON.stringify(articleData, null, 2));
+          
           setArticle(articleData);
         } else {
           setError("لم يتم العثور على المقال");
@@ -88,7 +104,10 @@ export default function ArticleDetails({
                 تفاصيل المقال
               </h1>
             </div>
-            <LogoutButton />
+            <div className="flex items-center gap-2 space-x-reverse">
+              <BackToDashboardButton fallbackPath="/dashboard/writer" />
+              <LogoutButton />
+            </div>
           </div>
         </div>
       </header>
@@ -103,12 +122,6 @@ export default function ArticleDetails({
         ) : error ? (
           <div className="text-center py-12">
             <p className="text-red-600 arabic-text">{error}</p>
-            <Button
-              onClick={() => router.push("/dashboard/writer")}
-              className="mt-4"
-            >
-              العودة للداشبورد
-            </Button>
           </div>
         ) : article ? (
           <>
@@ -171,19 +184,41 @@ export default function ArticleDetails({
               </CardContent>
             </Card>
 
-            {/* زر العودة فقط - لا تعديل ولا حذف */}
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                onClick={() => router.push("/dashboard/writer")}
-              >
-                العودة للداشبورد
-              </Button>
-            </div>
+            {/* Alert معلوماتي فقط - بدون أزرار تعديل */}
+            {(() => {
+              // قراءة isPending من URL query parameter
+              const isPendingFromUrl = searchParams.get('isPending') === 'true';
+              
+              // استخدام isPending من الـ article أو من الـ URL
+              const isPendingArticle = article.isPending ?? isPendingFromUrl;
+              
+              return isPendingArticle === true;
+            })() ? (
+              // مقالة تحت المراجعة
+              <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
+                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                <AlertTitle className="arabic-heading text-yellow-800 dark:text-yellow-500 font-bold">
+                  ⏳ مقالة تحت المراجعة
+                </AlertTitle>
+                <AlertDescription className="arabic-text text-yellow-700 dark:text-yellow-400 mt-2">
+                  هذه المقالة تحت المراجعة حالياً. سيتم إعلامك عند الموافقة عليها من المسؤول.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              // مقالة منشورة
+              <Alert className="mb-6 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+                <AlertCircle className="h-5 w-5 text-green-600 dark:text-green-500" />
+                <AlertTitle className="arabic-heading text-green-800 dark:text-green-500 font-bold">
+                  ✅ مقالة منشورة
+                </AlertTitle>
+                <AlertDescription className="arabic-text text-green-700 dark:text-green-400 mt-2">
+                  تم نشر هذه المقالة بنجاح! يمكنك مشاهدتها على الموقع.
+                </AlertDescription>
+              </Alert>
+            )}
           </>
         ) : null}
       </main>
     </div>
   );
 }
-

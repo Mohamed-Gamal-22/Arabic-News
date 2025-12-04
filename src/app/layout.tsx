@@ -38,7 +38,7 @@ export default async function RootLayout({
         <AuthProvider>
           <Header categories={categories} />
           <main>{children}</main>
-          <Footer />
+          <Footer categories={categories} />
         </AuthProvider>
       </body>
     </html>

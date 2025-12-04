@@ -73,7 +73,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         {...props}
       >
         <div className="flex items-start gap-3">
-          <div className={cn("flex-shrink-0 mt-0.5", currentVariant.icon)}>
+        <div className={cn("shrink-0 mt-0.5", currentVariant.icon)}>
             {currentVariant.iconSvg}
           </div>
           <div className="flex-1">{children}</div>
@@ -81,7 +81,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
             <button
               onClick={onClose}
               className={cn(
-                "flex-shrink-0 mt-0.5 p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors",
+                "shrink-0 mt-0.5 p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors",
                 currentVariant.closeButton
               )}
               aria-label="إغلاق"
@@ -117,5 +117,29 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
 
 Alert.displayName = "Alert";
 
-export { Alert };
+const AlertTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h5
+    ref={ref}
+    className={cn("mb-1 font-medium leading-none tracking-tight", className)}
+    {...props}
+  />
+));
+AlertTitle.displayName = "AlertTitle";
+
+const AlertDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("text-sm [&_p]:leading-relaxed", className)}
+    {...props}
+  />
+));
+AlertDescription.displayName = "AlertDescription";
+
+export { Alert, AlertTitle, AlertDescription };
 

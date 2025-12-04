@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Card,
   CardContent,
@@ -28,7 +28,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
+import BackToDashboardButton from "@/components/BackToDashboardButton";
 import { getArticleById, updateArticle } from "@/lib/api";
 import { getCategoriesWithToken } from "@/lib/superAdminApi";
 import { Category } from "@/lib/api";
@@ -49,6 +52,8 @@ export default function EditArticlePage({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [wasPublished, setWasPublished] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [formData, setFormData] = useState({
     Title: "",
@@ -87,6 +92,10 @@ export default function EditArticlePage({
 
         if (articleData) {
           setArticle(articleData);
+          
+          // فحص إذا كانت المقالة منشورة (IsPending=false يعني منشورة)
+          // نفترض أن المقالة منشورة إذا كان لها publishedAt
+          setWasPublished(!!articleData.publishedAt);
 
           // تحديد CategoryId الحالي
           let categoryId = "";
@@ -178,6 +187,15 @@ export default function EditArticlePage({
 
       await updateArticle(articleId.toString(), updateData, token);
 
+      // تحديد رسالة النجاح بناءً على حالة المقالة
+      if (wasPublished) {
+        setSuccessMessage(
+          "تم حفظ التعديلات بنجاح! ✅ المقالة الآن تحت المراجعة وتحتاج موافقة جديدة للنشر."
+        );
+      } else {
+        setSuccessMessage("تم تعديل المقال بنجاح");
+      }
+
       setShowSuccessModal(true);
     } catch (err: any) {
       console.error("Error updating article:", err);
@@ -207,7 +225,10 @@ export default function EditArticlePage({
                 تعديل المقال
               </h1>
             </div>
-            <LogoutButton />
+            <div className="flex items-center gap-2 space-x-reverse">
+              <BackToDashboardButton fallbackPath="/dashboard/super-admin?tab=articles" />
+              <LogoutButton />
+            </div>
           </div>
         </div>
       </header>
@@ -222,15 +243,24 @@ export default function EditArticlePage({
         ) : error ? (
           <div className="text-center py-12">
             <p className="text-red-600 arabic-text">{error}</p>
-            <Button
-              onClick={() => router.push("/dashboard/super-admin?tab=articles")}
-              className="mt-4"
-            >
-              العودة للداشبورد
-            </Button>
           </div>
         ) : (
-          <Card>
+          <>
+            {/* تحذير للمقالات المنشورة */}
+            {wasPublished && (
+              <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
+                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                <AlertTitle className="arabic-heading text-yellow-800 dark:text-yellow-500 font-bold">
+                  ⚠️ تحذير: مقالة منشورة
+                </AlertTitle>
+                <AlertDescription className="arabic-text text-yellow-700 dark:text-yellow-400 mt-2">
+                  هذه المقالة منشورة حالياً. أي تعديل سيتم عليها سيرجعها تلقائياً إلى
+                  حالة المراجعة وتحتاج موافقة جديدة للنشر.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Card>
             <CardHeader>
               <CardTitle className="arabic-heading text-2xl">
                 تعديل المقال
@@ -328,7 +358,7 @@ export default function EditArticlePage({
                 </div>
 
                 <div className="flex justify-end gap-3 space-x-reverse">
-                  <Button
+                  <LoadingButton
                     type="button"
                     variant="outline"
                     onClick={() =>
@@ -337,14 +367,19 @@ export default function EditArticlePage({
                     disabled={saving}
                   >
                     إلغاء
-                  </Button>
-                  <Button type="submit" disabled={saving}>
-                    {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
-                  </Button>
+                  </LoadingButton>
+                  <LoadingButton 
+                    type="submit" 
+                    loading={saving}
+                    loadingText="جاري الحفظ..."
+                  >
+                    حفظ التعديلات
+                  </LoadingButton>
                 </div>
               </form>
             </CardContent>
           </Card>
+          </>
         )}
 
         {/* Success Modal */}
@@ -353,11 +388,11 @@ export default function EditArticlePage({
             <DialogHeader>
               <DialogTitle className="arabic-heading">نجح التعديل</DialogTitle>
               <DialogDescription className="arabic-text">
-                تم تعديل المقال بنجاح
+                {successMessage || "تم تعديل المقال بنجاح"}
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end mt-4">
-              <Button onClick={handleSuccessClose}>حسناً</Button>
+              <LoadingButton onClick={handleSuccessClose}>حسناً</LoadingButton>
             </div>
           </DialogContent>
         </Dialog>
@@ -374,7 +409,7 @@ export default function EditArticlePage({
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end mt-4">
-              <Button onClick={() => setShowErrorModal(false)}>حسناً</Button>
+              <LoadingButton onClick={() => setShowErrorModal(false)}>حسناً</LoadingButton>
             </div>
           </DialogContent>
         </Dialog>

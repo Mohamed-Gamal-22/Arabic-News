@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Card,
   CardContent,
@@ -29,13 +29,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle, getCurrentUser, CurrentUserProfile, UserCategory } from "@/lib/api";
+import { createArticle, getCurrentUserMe } from "@/lib/api";
+import { Category } from "@/lib/api";
 
 export default function CreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [categories, setCategories] = useState<UserCategory[]>([]);
-  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -76,31 +76,36 @@ export default function CreateArticlePage() {
   const [keywordInput, setKeywordInput] = useState("");
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserCategories = async () => {
       if (!session?.accessToken) return;
 
       try {
-        // جلب بيانات المستخدم الحالي
-        const userData = await getCurrentUser(session.accessToken);
+        // جلب بيانات المستخدم الحالي من /api/authentication/me
+        const userData = await getCurrentUserMe(session.accessToken);
         
-        if (userData) {
-          console.log("✅ User data loaded for writer:", userData);
-          setCurrentUser(userData);
-          // استخدام categories من بيانات المستخدم (المسموح بها فقط)
-          setCategories(userData.categories || []);
-          setError(null);
+        console.log("=== Writer User Data ===");
+        console.log("User categories:", userData?.categories);
+        console.log("User categoryIds:", userData?.categoryIds);
+        
+        if (userData?.categories && userData.categories.length > 0) {
+          // عرض فقط الأقسام المسموح للكاتب بالكتابة فيها
+          setCategories(userData.categories);
+          console.log("✅ Writer allowed categories:", userData.categories);
         } else {
-          setError("حدث خطأ في جلب بيانات المستخدم. يرجى المحاولة مرة أخرى.");
+          // إذا لم يكن للكاتب أقسام مخصصة، نعرض رسالة
+          console.log("⚠️ Writer has no assigned categories");
+          setCategories([]);
+          setError("لم يتم تخصيص أقسام لك بعد. يرجى التواصل مع المسؤول.");
         }
       } catch (err: any) {
-        console.error("❌ Error fetching user data:", err);
+        console.error("❌ Error fetching user categories:", err);
         setCategories([]);
-        setError(err.message || "حدث خطأ في جلب البيانات. يرجى المحاولة مرة أخرى.");
+        setError("حدث خطأ في جلب الأقسام المسموح لك بالكتابة فيها.");
       }
     };
 
     if (session) {
-      fetchUserData();
+      fetchUserCategories();
     }
   }, [session]);
 
@@ -307,8 +312,24 @@ export default function CreateArticlePage() {
         setShowSuccessModal(true);
       }
     } catch (err: any) {
-      setError(err.message || "حدث خطأ في إنشاء المقال");
-      console.error("Error creating article:", err);
+      console.error("=== Error Creating Article ===");
+      console.error("Full error:", err);
+      console.error("Error message:", err.message);
+      
+      // معالجة رسالة الخطأ لعرضها بوضوح
+      let displayError = "حدث خطأ في إنشاء المقال";
+      
+      if (err.message) {
+        // إذا كانت الرسالة تحتوي على تفاصيل validation errors من الـ API
+        if (err.message.includes(":")) {
+          displayError = err.message; // عرض الرسالة كاملة مع أسماء الحقول
+        } else {
+          displayError = err.message;
+        }
+      }
+      
+      setErrorMessage(displayError);
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -336,15 +357,7 @@ export default function CreateArticlePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="arabic-heading">
-              {currentUser ? (
-                <div className="flex items-center gap-3 space-x-reverse">
-                  <span>مرحبا {currentUser.displayName || currentUser.fullName || currentUser.userName}</span>
-                </div>
-              ) : (
-                "إنشاء مقال جديد"
-              )}
-            </CardTitle>
+            <CardTitle className="arabic-heading">إنشاء مقال جديد</CardTitle>
             <CardDescription className="arabic-text">
               قم بملء البيانات التالية لإنشاء مقال جديد
             </CardDescription>
@@ -515,13 +528,13 @@ export default function CreateArticlePage() {
                     placeholder="أضف كلمة مفتاحية مخصصة"
                     className="flex-1"
                   />
-                  <Button
+                  <LoadingButton
                     type="button"
                     variant="outline"
                     onClick={addCustomKeyword}
                   >
                     إضافة
-                  </Button>
+                  </LoadingButton>
                 </div>
               </div>
 
@@ -539,18 +552,22 @@ export default function CreateArticlePage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-3 space-x-reverse">
-                <Button
+              <div className="flex justify-end space-x-4 space-x-reverse">
+                <LoadingButton
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/dashboard/writer")}
                   disabled={loading}
                 >
                   إلغاء
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "جاري الإنشاء..." : "إنشاء المقال"}
-                </Button>
+                </LoadingButton>
+                <LoadingButton 
+                  type="submit" 
+                  loading={loading}
+                  loadingText="جاري الإنشاء..."
+                >
+                  إنشاء المقال
+                </LoadingButton>
               </div>
             </form>
           </CardContent>
@@ -561,18 +578,16 @@ export default function CreateArticlePage() {
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 space-x-reverse text-green-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-green-600">
+              <span>✅</span>
               <span>تمام تم الإضافة</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
               تم إنشاء المقال بنجاح!
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3 space-x-reverse mt-4">
-            <Button
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+            <LoadingButton
               onClick={() => {
                 setShowSuccessModal(false);
                 router.push("/dashboard/writer");
@@ -580,7 +595,7 @@ export default function CreateArticlePage() {
               className="bg-green-600 hover:bg-green-700"
             >
               موافق
-            </Button>
+            </LoadingButton>
           </div>
         </DialogContent>
       </Dialog>
@@ -589,25 +604,25 @@ export default function CreateArticlePage() {
       <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 space-x-reverse text-red-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span>حقل مطلوب</span>
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-red-600">
+              <span>⚠️</span>
+              <span>خطأ في البيانات</span>
             </DialogTitle>
-            <DialogDescription className="arabic-text text-lg">
-              {errorMessage}
+            <DialogDescription className="arabic-text text-base">
+              <div className="whitespace-pre-wrap text-right" dir="rtl">
+                {errorMessage}
+              </div>
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3 space-x-reverse mt-4">
-            <Button
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+            <LoadingButton
               onClick={() => {
                 setShowErrorModal(false);
               }}
               className="bg-red-600 hover:bg-red-700"
             >
               موافق
-            </Button>
+            </LoadingButton>
           </div>
         </DialogContent>
       </Dialog>

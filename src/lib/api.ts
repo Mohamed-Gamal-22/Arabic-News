@@ -45,6 +45,9 @@ export const API_ENDPOINTS = {
   DASHBOARD_STATS: "/dashboard/stats",
   WRITER_STATS: "/dashboard/writer-stats",
   ADMIN_STATS: "/dashboard/admin-stats",
+  
+  // المستخدم الحالي
+  CURRENT_USER: "/authentication/me",
 };
 
 // أنواع الاستجابات
@@ -66,30 +69,6 @@ export interface User {
   avatar?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-// واجهة Category من بيانات المستخدم
-export interface UserCategory {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  parentId: number | null;
-}
-
-// واجهة بيانات المستخدم الحالي من /api/authentication/me
-export interface CurrentUserProfile {
-  id: string;
-  userName: string;
-  email: string;
-  displayName: string;
-  phoneNumber: string;
-  nationalId: string;
-  fullName: string;
-  imageUrl: string;
-  roles: string[];
-  categoryIds: number[];
-  categories: UserCategory[];
 }
 
 // واجهة User من الـ API الجديد
@@ -257,6 +236,7 @@ export interface ApiArticle {
   authorName: string;
   publishedAt: string;
   isTrending: boolean;
+  isPending: boolean;
   categoryName: string;
   imageUrl: string | null;
 }
@@ -274,7 +254,8 @@ export const getArticles = async (
   pageIndex: number = 1,
   pageSize: number = 10,
   isTrending?: boolean,
-  token?: string
+  token?: string,
+  isPending?: boolean
 ): Promise<ArticlesResponse> => {
   try {
     // التأكد من إرسال pageSize بشكل صحيح
@@ -288,6 +269,10 @@ export const getArticles = async (
 
     if (isTrending !== undefined) {
       url += `&IsTrending=${isTrending}`;
+    }
+
+    if (isPending !== undefined) {
+      url += `&IsPending=${isPending}`;
     }
 
     console.log("Fetching articles from:", url);
@@ -364,47 +349,6 @@ export const getArticleById = async (
   }
 };
 
-// دالة لجلب مقال واحد بالـ Slug
-export const getArticleBySlug = async (
-  slug: string,
-  token?: string
-): Promise<ApiArticle | null> => {
-  try {
-    const url = `https://newswebsite.runasp.net/api/article/slug/${slug}`;
-    console.log("Fetching article by slug from:", url);
-
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-
-    // إضافة التوكن إذا كان متوفر
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(url, {
-      cache: "no-store",
-      headers,
-    });
-
-    console.log("Response status:", response.status);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("Article data received:", data);
-    return data;
-  } catch (error) {
-    console.error("Error fetching article by slug:", error);
-    return null;
-  }
-};
-
 // دالة لتحديث مقال
 export const updateArticle = async (
   articleId: string,
@@ -440,6 +384,9 @@ export const updateArticle = async (
       console.log(`  ${key}:`, value);
     }
 
+    console.log("=== Sending PUT Request ===");
+    console.log("Token:", token ? `${token.substring(0, 20)}...` : "Missing");
+    
     const response = await fetch(url, {
       method: "PUT",
       headers: {
@@ -449,8 +396,10 @@ export const updateArticle = async (
       body: formDataToSend,
     });
 
+    console.log("=== Response Received ===");
     console.log("Response status:", response.status);
     console.log("Response OK:", response.ok);
+    console.log("Response statusText:", response.statusText);
 
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
@@ -462,21 +411,30 @@ export const updateArticle = async (
           errorDetails = await response.json();
           console.log("Error response JSON:", errorDetails);
 
-          // إذا كان هناك validation errors، نعرضها بشكل واضح
+          // إذا كان هناك validation errors، نعرضها بشكل واضح مع ترجمة للعربي
           if (errorDetails.errors) {
+            const fieldNames: Record<string, string> = {
+              'Title': 'العنوان',
+              'Content': 'المحتوى',
+              'Summary': 'الملخص',
+              'Slug': 'الرابط',
+              'CategoryId': 'القسم',
+              'Image': 'الصورة',
+              'Keywords': 'الكلمات المفتاحية',
+            };
+            
             const validationErrors: string[] = [];
             Object.keys(errorDetails.errors).forEach((field) => {
               const fieldErrors = errorDetails.errors[field];
+              const arabicFieldName = fieldNames[field] || field;
               if (Array.isArray(fieldErrors)) {
                 fieldErrors.forEach((err: string) => {
-                  validationErrors.push(`${field}: ${err}`);
+                  validationErrors.push(`❌ ${arabicFieldName}: ${err}`);
                 });
               }
             });
             if (validationErrors.length > 0) {
-              errorMessage = `خطأ في التحقق من البيانات:\n${validationErrors.join(
-                "\n"
-              )}`;
+              errorMessage = validationErrors.join("\n");
             } else {
               errorMessage =
                 errorDetails.title || errorDetails.message || errorMessage;
@@ -501,7 +459,8 @@ export const updateArticle = async (
     console.log("✅ Article updated successfully:", data);
     return data;
   } catch (error) {
-    return null;
+    console.error("Error updating article:", error);
+    throw error; // رمي الـ error بدل إرجاع null
   }
 };
 
@@ -564,11 +523,22 @@ export const createArticle = async (
             );
 
             if (errorData.errors) {
-              // معالجة أخطاء التحقق من الـ API
+              // معالجة أخطاء التحقق من الـ API مع ترجمة أسماء الحقول
+              const fieldNames: Record<string, string> = {
+                'Title': 'العنوان',
+                'Content': 'المحتوى',
+                'Summary': 'الملخص',
+                'Slug': 'الرابط',
+                'CategoryId': 'القسم',
+                'Image': 'الصورة',
+                'Keywords': 'الكلمات المفتاحية',
+              };
+              
               const errorMessages = Object.entries(errorData.errors)
                 .map(([field, errors]) => {
                   const errorArray = Array.isArray(errors) ? errors : [errors];
-                  return `${field}: ${errorArray.join(", ")}`;
+                  const arabicFieldName = fieldNames[field] || field;
+                  return `❌ ${arabicFieldName}: ${errorArray.join(", ")}`;
                 })
                 .join("\n");
               errorMessage = errorMessages;
@@ -599,6 +569,7 @@ export const createArticle = async (
       console.error("Status:", response.status);
       console.error("Message:", errorMessage);
       console.error("Details:", errorDetails);
+      console.error("Full Error Response:", JSON.stringify(errorDetails, null, 2));
 
       throw new Error(errorMessage);
     }
@@ -613,9 +584,7 @@ export const createArticle = async (
 };
 
 // دالة لجلب بيانات المستخدم الحالي
-export const getCurrentUser = async (
-  token: string
-): Promise<CurrentUserProfile | null> => {
+export const getCurrentUserMe = async (token: string): Promise<ApiUser | null> => {
   try {
     const url = `https://newswebsite.runasp.net/api/authentication/me`;
     console.log("Fetching current user from:", url);
@@ -632,14 +601,13 @@ export const getCurrentUser = async (
     console.log("Response status:", response.status);
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
-      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
     console.log("Current user data received:", data);
+    console.log("User categories:", data.categories);
+    console.log("User categoryIds:", data.categoryIds);
     return data;
   } catch (error) {
     console.error("Error fetching current user:", error);

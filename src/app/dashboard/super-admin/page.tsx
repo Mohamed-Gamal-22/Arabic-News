@@ -32,7 +32,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pagination } from "@/components/ui/pagination";
 import LogoutButton from "@/components/LogoutButton";
-import { Alert } from "@/components/ui/alert";
 import {
   getUsers,
   deleteUser,
@@ -46,8 +45,6 @@ import {
   getArticleById,
   updateArticle,
   ApiArticle,
-  getCurrentUser,
-  CurrentUserProfile,
 } from "@/lib/api";
 
 export default function SuperAdminDashboard() {
@@ -55,14 +52,22 @@ export default function SuperAdminDashboard() {
   const searchParams = useSearchParams();
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [articles, setArticles] = useState<ApiArticle[]>([]);
-  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(
-    null
-  );
-  const [articlesPageIndex, setArticlesPageIndex] = useState(1);
-  const [articlesPageSize, setArticlesPageSize] = useState(5);
-  const [articlesTotal, setArticlesTotal] = useState(0);
   const [activeTab, setActiveTab] = useState<string>("articles");
+  const [activeArticlesTab, setActiveArticlesTab] = useState<string>("approved");
+  
+  // States للمقالات الموافق عليها
+  const [approvedArticles, setApprovedArticles] = useState<ApiArticle[]>([]);
+  const [approvedPageIndex, setApprovedPageIndex] = useState(1);
+  const [approvedPageSize, setApprovedPageSize] = useState(5);
+  const [approvedTotal, setApprovedTotal] = useState(0);
+  const [approvedLoading, setApprovedLoading] = useState(false);
+  
+  // States للمقالات تحت المراجعة
+  const [pendingArticles, setPendingArticles] = useState<ApiArticle[]>([]);
+  const [pendingPageIndex, setPendingPageIndex] = useState(1);
+  const [pendingPageSize, setPendingPageSize] = useState(5);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [pendingLoading, setPendingLoading] = useState(false);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     totalWriters: 0,
@@ -119,26 +124,6 @@ export default function SuperAdminDashboard() {
     "success"
   );
 
-  // جلب بيانات المستخدم الحالي
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!session?.accessToken) return;
-
-      try {
-        const userData = await getCurrentUser(session.accessToken);
-        if (userData) {
-          setCurrentUser(userData);
-        }
-      } catch (err) {
-        console.error("Error fetching user data:", err);
-      }
-    };
-
-    if (session) {
-      fetchUserData();
-    }
-  }, [session]);
-
   // قراءة الـ tab من URL query parameter
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -147,7 +132,7 @@ export default function SuperAdminDashboard() {
     }
   }, [searchParams]);
 
-  // جلب البيانات عند تحميل الصفحة
+  // جلب البيانات الأساسية عند تحميل الصفحة
   useEffect(() => {
     const fetchData = async () => {
       if (!session?.accessToken) return;
@@ -156,38 +141,14 @@ export default function SuperAdminDashboard() {
         setLoading(true);
         setError("");
 
-        // جلب المستخدمين والكاتيجوريز والمقالات
-        const [usersData, categoriesData, articlesData] = await Promise.all([
+        // جلب المستخدمين والكاتيجوريز
+        const [usersData, categoriesData] = await Promise.all([
           getUsers(session.accessToken),
           getCategoriesWithToken(session.accessToken),
-          getArticles(
-            articlesPageIndex,
-            articlesPageSize,
-            undefined,
-            session.accessToken
-          ),
         ]);
 
         setUsers(usersData);
         setCategories(categoriesData);
-
-        // استخدام pageIndex من response، لكن نستخدم pageSize الذي أرسلناه (5)
-        setArticlesPageIndex(articlesData.pageIndex || articlesPageIndex);
-        // لا نحدث pageSize من response - نستخدم القيمة التي أرسلناها (5)
-        setArticlesTotal(articlesData.totalCount || 0);
-        setArticles(articlesData.data || []);
-
-        console.log("=== Articles API Response ===");
-        console.log("PageIndex sent:", articlesPageIndex);
-        console.log("PageSize sent:", articlesPageSize);
-        console.log("PageIndex from API:", articlesData.pageIndex);
-        console.log("PageSize from API:", articlesData.pageSize);
-        console.log("Total Count:", articlesData.totalCount);
-        console.log("Articles in this page:", articlesData.data?.length || 0);
-        console.log(
-          "Total Pages:",
-          Math.ceil(articlesData.totalCount / articlesPageSize)
-        );
 
         // حساب الإحصائيات من البيانات المسترجعة
         const stats = {
@@ -201,12 +162,10 @@ export default function SuperAdminDashboard() {
           totalSuperAdmins: usersData.filter(
             (user: any) => user.roles && user.roles.includes("SuperAdmin")
           ).length,
-          totalArticles: articlesData.totalCount || articles.length,
-          publishedArticles:
-            articlesData.data?.filter((a: ApiArticle) => a.publishedAt)
-              ?.length || 0,
-          pendingArticles: 0, // سيتم تحديثه حسب API
-          rejectedArticles: 0, // سيتم تحديثه حسب API
+          totalArticles: approvedTotal + pendingTotal,
+          publishedArticles: approvedTotal,
+          pendingArticles: pendingTotal,
+          rejectedArticles: 0,
         };
         setSystemStats(stats);
       } catch (error) {
@@ -218,11 +177,75 @@ export default function SuperAdminDashboard() {
     };
 
     fetchData();
-  }, [session, articlesPageIndex, articlesPageSize]);
+  }, [session, approvedTotal, pendingTotal]);
 
-  // دالة لتغيير صفحة المقالات
-  const handleArticlesPageChange = (newPageIndex: number) => {
-    setArticlesPageIndex(newPageIndex);
+  // جلب المقالات الموافق عليها
+  useEffect(() => {
+    const fetchApprovedArticles = async () => {
+      if (!session?.accessToken) return;
+
+      try {
+        setApprovedLoading(true);
+        const response = await getArticles(
+          approvedPageIndex,
+          approvedPageSize,
+          undefined,
+          session.accessToken,
+          false // IsPending=false للمقالات الموافق عليها
+        );
+
+        if (response) {
+          setApprovedArticles(response.data || []);
+          setApprovedTotal(response.totalCount || 0);
+        }
+      } catch (error) {
+        console.error("خطأ في جلب المقالات الموافق عليها:", error);
+      } finally {
+        setApprovedLoading(false);
+      }
+    };
+
+    fetchApprovedArticles();
+  }, [session, approvedPageIndex, approvedPageSize]);
+
+  // جلب المقالات تحت المراجعة
+  useEffect(() => {
+    const fetchPendingArticles = async () => {
+      if (!session?.accessToken) return;
+
+      try {
+        setPendingLoading(true);
+        const response = await getArticles(
+          pendingPageIndex,
+          pendingPageSize,
+          undefined,
+          session.accessToken,
+          true // IsPending=true للمقالات تحت المراجعة
+        );
+
+        if (response) {
+          setPendingArticles(response.data || []);
+          setPendingTotal(response.totalCount || 0);
+        }
+      } catch (error) {
+        console.error("خطأ في جلب المقالات تحت المراجعة:", error);
+      } finally {
+        setPendingLoading(false);
+      }
+    };
+
+    fetchPendingArticles();
+  }, [session, pendingPageIndex, pendingPageSize]);
+
+  // دالة لتغيير صفحة المقالات الموافق عليها
+  const handleApprovedPageChange = (newPageIndex: number) => {
+    setApprovedPageIndex(newPageIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // دالة لتغيير صفحة المقالات تحت المراجعة
+  const handlePendingPageChange = (newPageIndex: number) => {
+    setPendingPageIndex(newPageIndex);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -550,17 +573,7 @@ export default function SuperAdminDashboard() {
                 <span className="text-white font-bold text-lg">أ</span>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
-                {currentUser ? (
-                  <span>
-                    مرحبا{" "}
-                    {currentUser.displayName ||
-                      currentUser.fullName ||
-                      currentUser.userName}{" "}
-                    (سوبر أدمن)
-                  </span>
-                ) : (
-                  "داشبورد السوبر أدمن"
-                )}
+                داشبورد السوبر أدمن
               </h1>
             </div>
             <LogoutButton />
@@ -571,16 +584,38 @@ export default function SuperAdminDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Success/Cancel Alert */}
         {showDeleteResultAlert && (deleteSuccess || deleteCancelMessage) && (
-          <Alert
-            variant={deleteSuccess ? "success" : "info"}
-            onClose={() => {
-              setShowDeleteResultAlert(false);
-              setDeleteSuccess("");
-              setDeleteCancelMessage("");
-            }}
+          <div
+            className={`border px-4 py-3 rounded-lg mb-6 arabic-text ${
+              deleteSuccess
+                ? "bg-green-50 border-green-200 text-green-700"
+                : "bg-blue-50 border-blue-200 text-blue-700"
+            }`}
           >
-            {deleteSuccess || deleteCancelMessage}
-          </Alert>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <span
+                  className={deleteSuccess ? "text-green-600" : "text-blue-600"}
+                >
+                  {deleteSuccess ? "✅" : "ℹ️"}
+                </span>
+                <span>{deleteSuccess || deleteCancelMessage}</span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDeleteResultAlert(false);
+                  setDeleteSuccess("");
+                  setDeleteCancelMessage("");
+                }}
+                className={
+                  deleteSuccess
+                    ? "text-green-600 hover:text-green-800"
+                    : "text-blue-600 hover:text-blue-800"
+                }
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         )}
 
         {/* الإحصائيات العامة */}
@@ -685,7 +720,7 @@ export default function SuperAdminDashboard() {
               value="articles"
               className="arabic-text flex-row-reverse"
             >
-              المقالات ({articles.length})
+              المقالات ({approvedTotal + pendingTotal})
             </TabsTrigger>
             <TabsTrigger
               value="categories"
@@ -722,59 +757,153 @@ export default function SuperAdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {articles.length > 0 ? (
-                    articles.map((article) => (
-                      <div
-                        key={article.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
-                            {article.title}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                            <span>✍️ {article.authorName}</span>
-                            <span>
-                              📅{" "}
-                              {new Date(article.publishedAt).toLocaleDateString(
-                                "ar-EG"
-                              )}
-                            </span>
-                            <span>📂 {article.categoryName || "بدون قسم"}</span>
-                            {article.isTrending && (
-                              <span className="text-orange-600">🔥 تريند</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2 space-x-reverse">
-                          <Link
-                            href={`/dashboard/super-admin/article/${article.id}`}
-                          >
-                            <Button variant="outline" size="sm">
-                              مراجعة
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
-                      لا توجد مقالات
-                    </div>
-                  )}
-                </div>
+                {/* Tabs فرعية للمقالات */}
+                <Tabs value={activeArticlesTab} onValueChange={setActiveArticlesTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6 flex-row-reverse">
+                    <TabsTrigger
+                      value="approved"
+                      className="arabic-text flex-row-reverse data-[state=active]:bg-green-600 data-[state=active]:text-white"
+                    >
+                      المقالات الموافق عليها ({approvedTotal})
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="pending"
+                      className="arabic-text flex-row-reverse data-[state=active]:bg-yellow-500 data-[state=active]:text-gray-900"
+                    >
+                      المقالات تحت المراجعة ({pendingTotal})
+                    </TabsTrigger>
+                  </TabsList>
 
-                {/* Pagination */}
-                {articlesTotal > articlesPageSize && (
-                  <div className="mt-6 flex justify-center">
-                    <Pagination
-                      currentPage={articlesPageIndex}
-                      totalPages={Math.ceil(articlesTotal / articlesPageSize)}
-                      onPageChange={handleArticlesPageChange}
-                    />
-                  </div>
-                )}
+                  {/* تاب المقالات الموافق عليها */}
+                  <TabsContent value="approved">
+                    {approvedLoading ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                          جاري التحميل...
+                        </p>
+                      </div>
+                    ) : approvedArticles.length > 0 ? (
+                      <>
+                        <div className="space-y-4">
+                          {approvedArticles.map((article) => (
+                            <div
+                              key={article.id}
+                              className="flex items-center justify-between p-4 border rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                                  {article.title}
+                                </h3>
+                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                  <span>✍️ {article.authorName}</span>
+                                  <span>
+                                    📅{" "}
+                                    {new Date(article.publishedAt).toLocaleDateString(
+                                      "ar-EG"
+                                    )}
+                                  </span>
+                                  <span>📂 {article.categoryName || "بدون قسم"}</span>
+                                  {article.isTrending && (
+                                    <span className="text-orange-600">🔥 تريند</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 space-x-reverse">
+                                <Link
+                                  href={`/dashboard/super-admin/article/${article.id}`}
+                                >
+                                  <Button variant="outline" size="sm">
+                                    مراجعة
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Pagination للمقالات الموافق عليها */}
+                        {approvedTotal > approvedPageSize && (
+                          <div className="mt-6 flex justify-center">
+                            <Pagination
+                              currentPage={approvedPageIndex}
+                              totalPages={Math.ceil(approvedTotal / approvedPageSize)}
+                              onPageChange={handleApprovedPageChange}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                        لا توجد مقالات موافق عليها
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* تاب المقالات تحت المراجعة */}
+                  <TabsContent value="pending">
+                    {pendingLoading ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                          جاري التحميل...
+                        </p>
+                      </div>
+                    ) : pendingArticles.length > 0 ? (
+                      <>
+                        <div className="space-y-4">
+                          {pendingArticles.map((article) => (
+                            <div
+                              key={article.id}
+                              className="flex items-center justify-between p-4 border rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                                  {article.title}
+                                </h3>
+                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                  <span>✍️ {article.authorName}</span>
+                                  <span>
+                                    📅{" "}
+                                    {new Date(article.publishedAt).toLocaleDateString(
+                                      "ar-EG"
+                                    )}
+                                  </span>
+                                  <span>📂 {article.categoryName || "بدون قسم"}</span>
+                                  {article.isTrending && (
+                                    <span className="text-orange-600">🔥 تريند</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 space-x-reverse">
+                                <Link
+                                  href={`/dashboard/super-admin/article/${article.id}`}
+                                >
+                                  <Button variant="outline" size="sm">
+                                    مراجعة
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Pagination للمقالات تحت المراجعة */}
+                        {pendingTotal > pendingPageSize && (
+                          <div className="mt-6 flex justify-center">
+                            <Pagination
+                              currentPage={pendingPageIndex}
+                              totalPages={Math.ceil(pendingTotal / pendingPageSize)}
+                              onPageChange={handlePendingPageChange}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                        لا توجد مقالات تحت المراجعة
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1039,16 +1168,22 @@ export default function SuperAdminDashboard() {
 
           {/* Success Message */}
           {deleteSuccess && (
-            <Alert variant="success" onClose={() => setDeleteSuccess("")}>
-              {deleteSuccess}
-            </Alert>
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg arabic-text">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <span className="text-green-600">✅</span>
+                <span>{deleteSuccess}</span>
+              </div>
+            </div>
           )}
 
           {/* Error Message */}
           {deleteError && (
-            <Alert variant="error" onClose={() => setDeleteError("")}>
-              {deleteError}
-            </Alert>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg arabic-text">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <span className="text-red-600">❌</span>
+                <span>{deleteError}</span>
+              </div>
+            </div>
           )}
 
           <div className="flex justify-end gap-4 mt-4">
@@ -1180,39 +1315,11 @@ export default function SuperAdminDashboard() {
         <DialogContent className="arabic-text">
           <DialogHeader>
             <DialogTitle
-              className={`flex items-center gap-3 space-x-reverse ${
+              className={`flex items-center space-x-2 space-x-reverse ${
                 roleResultType === "success" ? "text-green-600" : "text-red-600"
               }`}
             >
-              {roleResultType === "success" ? (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              )}
+              <span>{roleResultType === "success" ? "✅" : "❌"}</span>
               <span>
                 {roleResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
               </span>
@@ -1222,7 +1329,7 @@ export default function SuperAdminDashboard() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end gap-3 space-x-reverse mt-4">
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
             <Button
               variant="outline"
               onClick={() => setShowRoleResultModal(false)}
@@ -1371,41 +1478,13 @@ export default function SuperAdminDashboard() {
         <DialogContent className="arabic-text">
           <DialogHeader>
             <DialogTitle
-              className={`flex items-center gap-3 space-x-reverse ${
+              className={`flex items-center space-x-2 space-x-reverse ${
                 categoryResultType === "success"
                   ? "text-green-600"
                   : "text-red-600"
               }`}
             >
-              {categoryResultType === "success" ? (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              )}
+              <span>{categoryResultType === "success" ? "✅" : "❌"}</span>
               <span>
                 {categoryResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
               </span>
@@ -1415,7 +1494,7 @@ export default function SuperAdminDashboard() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end gap-3 space-x-reverse mt-4">
+          <div className="flex justify-end space-x-2 space-x-reverse mt-4">
             <Button
               variant="outline"
               onClick={() => setShowCategoryResultModal(false)}
@@ -1492,42 +1571,8 @@ export default function SuperAdminDashboard() {
       >
         <DialogContent className="arabic-text">
           <DialogHeader>
-            <DialogTitle
-              className={`flex items-center gap-3 space-x-reverse ${
-                deleteResultType === "success"
-                  ? "text-green-600"
-                  : "text-red-600"
-              }`}
-            >
-              {deleteResultType === "success" ? (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              )}
+            <DialogTitle className="flex items-center space-x-2 space-x-reverse text-blue-600">
+              <span>{deleteResultType === "success" ? "✅" : "❌"}</span>
               <span>
                 {deleteResultType === "success" ? "تم بنجاح!" : "حدث خطأ!"}
               </span>

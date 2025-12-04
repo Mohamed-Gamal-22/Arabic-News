@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createUser, getCategoriesWithToken } from "@/lib/superAdminApi";
+import BackToDashboardButton from "@/components/BackToDashboardButton";
 
 // Schema للتحقق من صحة البيانات
 const createUserSchema = z.object({
@@ -145,12 +146,9 @@ export default function CreateUserPage() {
                 إضافة مستخدم جديد
               </h1>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/dashboard/super-admin")}
-            >
-              العودة للداشبورد
-            </Button>
+            <div className="flex items-center gap-2 space-x-reverse">
+              <BackToDashboardButton fallbackPath="/dashboard/super-admin?tab=users" />
+            </div>
           </div>
         </div>
       </header>
@@ -449,7 +447,7 @@ export default function CreateUserPage() {
                               )}
                             </div>
                             {isSelected && (
-                              <div className="flex-shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <div className="shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   className="h-3 w-3 text-white"
@@ -514,8 +512,18 @@ export default function CreateUserPage() {
         <DialogContent className="arabic-text">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 space-x-reverse text-green-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <span>تم بنجاح!</span>
             </DialogTitle>
@@ -527,7 +535,7 @@ export default function CreateUserPage() {
             <Button
               onClick={() => router.push("/dashboard/super-admin?tab=users")}
             >
-              العودة للداشبورد
+              تم
             </Button>
           </div>
         </DialogContent>
@@ -538,8 +546,18 @@ export default function CreateUserPage() {
         <DialogContent className="arabic-text">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 space-x-reverse text-red-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
               <span>حدث خطأ!</span>
             </DialogTitle>

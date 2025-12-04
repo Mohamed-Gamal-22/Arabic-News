@@ -1,4 +1,33 @@
-export default function Footer() {
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useMemo } from "react";
+
+type FooterCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  parentId: number | null;
+};
+
+type FooterProps = {
+  categories?: FooterCategory[];
+};
+
+export default function Footer({ categories = [] }: FooterProps) {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
+
+  const topCategories = useMemo(() => {
+    if (!Array.isArray(categories)) return [];
+    return categories.filter((cat) => cat.parentId === null);
+  }, [categories]);
+
+  if (!isHomePage) {
+    return null;
+  }
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -64,46 +93,22 @@ export default function Footer() {
               الأقسام
             </h3>
             <ul className="space-y-2">
-              <li>
-                <a
-                  href="/politics"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  سياسة
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/economy"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  اقتصاد
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/sports"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  رياضة
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/technology"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  تكنولوجيا
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/world"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  عالمية
-                </a>
-              </li>
+              {topCategories.length > 0 ? (
+                topCategories.slice(0, 8).map((category) => (
+                  <li key={category.id}>
+                    <Link
+                      href={`/category/${category.slug}`}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li className="text-gray-500 arabic-text">
+                  لا توجد أقسام متاحة حالياً
+                </li>
+              )}
             </ul>
           </div>
 
