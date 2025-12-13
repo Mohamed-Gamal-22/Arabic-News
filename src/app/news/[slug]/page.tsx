@@ -7,6 +7,7 @@ import Link from "next/link";
 import { getArticleBySlug, ApiArticle, getArticles } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { convertVideoLinksToEmbeds } from "@/lib/utils";
 
 interface NewsDetailPageProps {
   params: Promise<{
@@ -335,7 +336,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
           <div className="mt-10 space-y-8">
             <div
               className="article-content arabic-text text-gray-800 dark:text-gray-200"
-              dangerouslySetInnerHTML={{ __html: article.content }}
+              dangerouslySetInnerHTML={{ __html: convertVideoLinksToEmbeds(article.content) }}
             />
 
             {article.keywords && (
