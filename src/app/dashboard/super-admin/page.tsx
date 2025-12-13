@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +50,7 @@ import {
 export default function SuperAdminDashboard() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeTab, setActiveTab] = useState<string>("articles");
@@ -576,7 +577,22 @@ export default function SuperAdminDashboard() {
                 داشبورد السوبر أدمن
               </h1>
             </div>
-            <LogoutButton />
+            <div className="flex items-center gap-6 space-x-reverse">
+              <Button
+                onClick={() => router.push("/")}
+                className="bg-blue-600 hover:bg-blue-700 text-white arabic-text"
+              >
+                العودة للقائمة الرئيسية
+              </Button>
+              <Button
+                onClick={async () => {
+                  await signOut({ callbackUrl: "/" });
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white arabic-text"
+              >
+                تسجيل الخروج
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -606,11 +622,11 @@ export default function SuperAdminDashboard() {
                   setDeleteSuccess("");
                   setDeleteCancelMessage("");
                 }}
-                className={
+                className={`cursor-pointer ${
                   deleteSuccess
                     ? "text-green-600 hover:text-green-800"
                     : "text-blue-600 hover:text-blue-800"
-                }
+                }`}
               >
                 ✕
               </button>
@@ -810,7 +826,7 @@ export default function SuperAdminDashboard() {
                               </div>
                               <div className="flex items-center space-x-2 space-x-reverse">
                                 <Link
-                                  href={`/dashboard/super-admin/article/${article.id}`}
+                                  href={`/dashboard/super-admin/article/${article.id}?tab=approved`}
                                 >
                                   <Button variant="outline" size="sm">
                                     مراجعة
@@ -875,7 +891,7 @@ export default function SuperAdminDashboard() {
                               </div>
                               <div className="flex items-center space-x-2 space-x-reverse">
                                 <Link
-                                  href={`/dashboard/super-admin/article/${article.id}`}
+                                  href={`/dashboard/super-admin/article/${article.id}?tab=pending`}
                                 >
                                   <Button variant="outline" size="sm">
                                     مراجعة
@@ -1087,18 +1103,6 @@ export default function SuperAdminDashboard() {
                               href={`/dashboard/super-admin/users/${user.id}`}
                             >
                               عرض
-                            </Link>
-                          </Button>
-                          <Button
-                            className="me-2 cursor-pointer"
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
-                            <Link
-                              href={`/dashboard/super-admin/users/edit/${user.id}`}
-                            >
-                              تعديل
                             </Link>
                           </Button>
                           {!user.roles?.includes("SuperAdmin") && (

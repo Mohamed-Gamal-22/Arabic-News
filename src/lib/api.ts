@@ -349,6 +349,47 @@ export const getArticleById = async (
   }
 };
 
+// دالة لجلب مقال واحد بالـ Slug
+export const getArticleBySlug = async (
+  slug: string,
+  token?: string
+): Promise<ApiArticle | null> => {
+  try {
+    const url = `https://newswebsite.runasp.net/api/article/slug/${slug}`;
+    console.log("Fetching article by slug from:", url);
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    // إضافة التوكن إذا كان متوفر
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers,
+    });
+
+    console.log("Response status:", response.status);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Article data received:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching article by slug:", error);
+    return null;
+  }
+};
+
 // دالة لتحديث مقال
 export const updateArticle = async (
   articleId: string,
@@ -455,9 +496,50 @@ export const updateArticle = async (
       throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-    console.log("✅ Article updated successfully:", data);
-    return data;
+    // التحقق من أن الـ response يحتوي على محتوى
+    const contentType = response.headers.get("content-type");
+    const contentLength = response.headers.get("content-length");
+    
+    // إذا كان الـ response فارغ (204 No Content) أو لا يحتوي على محتوى
+    if (response.status === 204 || contentLength === "0" || !contentType?.includes("application/json")) {
+      console.log("✅ Article updated successfully (No Content response)");
+      // محاولة جلب المقال المحدث
+      try {
+        const updatedArticle = await getArticleById(parseInt(articleId), token);
+        return updatedArticle;
+      } catch (e) {
+        console.log("Could not fetch updated article, returning success");
+        return null; // أو يمكن إرجاع object فارغ
+      }
+    }
+
+    // إذا كان الـ response يحتوي على JSON
+    try {
+      const text = await response.text();
+      if (!text || text.trim() === "") {
+        console.log("✅ Article updated successfully (Empty response)");
+        // محاولة جلب المقال المحدث
+        try {
+          const updatedArticle = await getArticleById(parseInt(articleId), token);
+          return updatedArticle;
+        } catch (e) {
+          return null;
+        }
+      }
+      
+      const data = JSON.parse(text);
+      console.log("✅ Article updated successfully:", data);
+      return data;
+    } catch (parseError) {
+      console.error("Error parsing response:", parseError);
+      // محاولة جلب المقال المحدث كـ fallback
+      try {
+        const updatedArticle = await getArticleById(parseInt(articleId), token);
+        return updatedArticle;
+      } catch (e) {
+        throw new Error("فشل تحديث المقال");
+      }
+    }
   } catch (error) {
     console.error("Error updating article:", error);
     throw error; // رمي الـ error بدل إرجاع null

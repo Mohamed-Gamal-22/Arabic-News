@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +28,6 @@ import {
   updateUser,
   getCategoriesWithToken,
 } from "@/lib/superAdminApi";
-import BackToDashboardButton from "@/components/BackToDashboardButton";
 
 // Schema للتحقق من صحة البيانات - الحقول اختيارية للتعديل الجزئي
 const updateUserSchema = z.object({
@@ -252,8 +251,21 @@ export default function EditUserPage() {
                 تعديل المستخدم
               </h1>
             </div>
-            <div className="flex items-center gap-2 space-x-reverse">
-              <BackToDashboardButton fallbackPath="/dashboard/super-admin?tab=users" />
+            <div className="flex items-center gap-6 space-x-reverse">
+              <Button
+                onClick={() => router.push("/dashboard/super-admin?tab=users")}
+                className="bg-blue-600 hover:bg-blue-700 text-white arabic-text"
+              >
+                العودة للقائمة الرئيسية
+              </Button>
+              <Button
+                onClick={async () => {
+                  await signOut({ callbackUrl: "/" });
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white arabic-text"
+              >
+                تسجيل الخروج
+              </Button>
             </div>
           </div>
         </div>

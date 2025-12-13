@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import TinyMCEEditor from "@/components/TinyMCEEditor";
 import {
   Dialog,
   DialogContent,
@@ -307,16 +308,13 @@ export default function EditArticlePage({
                   <Label htmlFor="Content" className="arabic-text">
                     المحتوى *
                   </Label>
-                  <Textarea
-                    id="Content"
-                    name="Content"
-                    value={formData.Content}
-                    onChange={handleInputChange}
-                    className="mt-1 arabic-text"
-                    rows={10}
-                    placeholder="محتوى المقال"
-                    required
-                  />
+                  <div className="mt-1">
+                    <TinyMCEEditor
+                      value={formData.Content}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, Content: value }))}
+                      placeholder="اكتب محتوى المقالة هنا..."
+                    />
+                  </div>
                 </div>
 
                 <div>

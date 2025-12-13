@@ -81,7 +81,15 @@ export default function AdminDashboard() {
         );
 
         if (response) {
-          setApprovedArticles(response.data || []);
+          const allowedCategoryNames =
+            currentUser?.categories?.map((c) => c.name) || null;
+          const filtered =
+            allowedCategoryNames && allowedCategoryNames.length > 0
+              ? (response.data || []).filter((article) =>
+                  allowedCategoryNames.includes(article.categoryName)
+                )
+              : response.data || [];
+          setApprovedArticles(filtered);
           setApprovedTotalCount(response.totalCount || 0);
         }
       } catch (err) {
@@ -95,7 +103,7 @@ export default function AdminDashboard() {
     if (session) {
       fetchApprovedArticles();
     }
-  }, [session, approvedPageIndex, approvedPageSize]);
+  }, [session, approvedPageIndex, approvedPageSize, currentUser]);
 
   // جلب المقالات تحت المراجعة
   useEffect(() => {
@@ -119,7 +127,15 @@ export default function AdminDashboard() {
         );
 
         if (response) {
-          setPendingArticles(response.data || []);
+          const allowedCategoryNames =
+            currentUser?.categories?.map((c) => c.name) || null;
+          const filtered =
+            allowedCategoryNames && allowedCategoryNames.length > 0
+              ? (response.data || []).filter((article) =>
+                  allowedCategoryNames.includes(article.categoryName)
+                )
+              : response.data || [];
+          setPendingArticles(filtered);
           setPendingTotalCount(response.totalCount || 0);
         }
       } catch (err) {
@@ -133,7 +149,7 @@ export default function AdminDashboard() {
     if (session) {
       fetchPendingArticles();
     }
-  }, [session, pendingPageIndex, pendingPageSize]);
+  }, [session, pendingPageIndex, pendingPageSize, currentUser]);
 
   const handleApprovedPageChange = (newPageIndex: number) => {
     setApprovedPageIndex(newPageIndex);
@@ -339,7 +355,9 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2 space-x-reverse">
-                            <Link href={`/dashboard/admin/article/${article.id}`}>
+                            <Link
+                              href={`/dashboard/admin/article/${article.id}?tab=approved`}
+                            >
                               <Button variant="outline" size="sm">
                                 مراجعة
                               </Button>
@@ -405,7 +423,9 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2 space-x-reverse">
-                            <Link href={`/dashboard/admin/article/${article.id}`}>
+                            <Link
+                              href={`/dashboard/admin/article/${article.id}?tab=pending`}
+                            >
                               <Button variant="outline" size="sm">
                                 مراجعة
                               </Button>

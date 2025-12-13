@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import LogoutButton from "@/components/LogoutButton";
 import { getUserById } from "@/lib/superAdminApi";
 
 export default function UserDetailsPage() {
@@ -152,14 +151,21 @@ export default function UserDetailsPage() {
                 تفاصيل المستخدم
               </h1>
             </div>
-            <div className="flex items-center space-x-2 space-x-reverse">
+            <div className="flex items-center gap-6 space-x-reverse">
               <Button
-                variant="outline"
                 onClick={() => router.push("/dashboard/super-admin?tab=users")}
+                className="bg-blue-600 hover:bg-blue-700 text-white arabic-text"
               >
-                العودة للقائمة
+                العودة للقائمة الرئيسية
               </Button>
-              <LogoutButton />
+              <Button
+                onClick={async () => {
+                  await signOut({ callbackUrl: "/" });
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white arabic-text"
+              >
+                تسجيل الخروج
+              </Button>
             </div>
           </div>
         </div>
@@ -178,15 +184,15 @@ export default function UserDetailsPage() {
                   معلومات المستخدم التفصيلية
                 </CardDescription>
               </div>
-              <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="flex items-center gap-4 space-x-reverse">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() =>
                     router.push(
                       `/dashboard/super-admin/users/edit/${userData.id}`
                     )
                   }
+                  className="bg-blue-600 hover:bg-blue-700 text-white arabic-text"
+                  size="sm"
                 >
                   تعديل
                 </Button>

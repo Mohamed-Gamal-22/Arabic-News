@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import TinyMCEEditor from "@/components/TinyMCEEditor";
 import {
   Dialog,
   DialogContent,
@@ -306,15 +307,13 @@ export default function SuperAdminCreateArticlePage() {
                 <Label htmlFor="content" className="arabic-text">
                   المحتوى *
                 </Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  required
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  className="mt-1"
-                  rows={10}
-                />
+                <div className="mt-1">
+                  <TinyMCEEditor
+                    value={formData.content}
+                    onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                    placeholder="اكتب محتوى المقالة هنا..."
+                  />
+                </div>
               </div>
 
               <div>

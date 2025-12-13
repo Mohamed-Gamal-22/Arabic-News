@@ -186,3 +186,124 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Styles لمحتوى المقال من الـ API - الحفاظ على الـ styles والـ tags كما هي */
+.article-content {
+  direction: rtl;
+  text-align: right;
+  line-height: 1.8;
+}
+
+.article-content * {
+  max-width: 100%;
+}
+
+/* الحفاظ على الـ styles من Quill */
+.article-content p {
+  margin-bottom: 1rem;
+  line-height: 1.8;
+}
+
+.article-content strong,
+.article-content b {
+  font-weight: 700;
+}
+
+.article-content em,
+.article-content i {
+  font-style: italic;
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 1rem 0;
+  padding-right: 2rem;
+  padding-left: 0;
+}
+
+.article-content ul {
+  list-style-type: disc;
+}
+
+.article-content ol {
+  list-style-type: decimal;
+}
+
+.article-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.8;
+}
+
+.article-content a {
+  color: #2563eb;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.article-content a:hover {
+  color: #1d4ed8;
+}
+
+.dark .article-content a {
+  color: #60a5fa;
+}
+
+.dark .article-content a:hover {
+  color: #93c5fd;
+}
+
+/* الحفاظ على الألوان من Quill */
+.article-content span[style*="color"] {
+  /* الألوان من inline styles ستعمل تلقائياً */
+}
+
+.article-content span[style*="background-color"] {
+  /* ألوان الخلفية من inline styles ستعمل تلقائياً */
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+/* تحسينات للصور إذا كانت موجودة */
+.article-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* تحسينات للعناوين إذا كانت موجودة */
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.article-content h1 {
+  font-size: 2rem;
+}
+
+.article-content h2 {
+  font-size: 1.75rem;
+}
+
+.article-content h3 {
+  font-size: 1.5rem;
+}
+
+.article-content h4 {
+  font-size: 1.25rem;
+}
+
+.article-content h5 {
+  font-size: 1.125rem;
+}
+
+.article-content h6 {
+  font-size: 1rem;
+}

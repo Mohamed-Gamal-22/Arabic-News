@@ -1,10 +1,12 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
-import { notFound } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getArticleBySlug, ApiArticle, getArticles } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 interface NewsDetailPageProps {
   params: Promise<{
@@ -12,12 +14,162 @@ interface NewsDetailPageProps {
   }>;
 }
 
+// Skeleton Loading Component
+function ArticleSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        {/* زر العودة Skeleton */}
+        <div className="animate-pulse">
+          <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+        </div>
+
+        {/* المقال Skeleton */}
+        <article className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden p-6 sm:p-10">
+          <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
+            <div className="lg:w-1/2 lg:order-1 space-y-6">
+              {/* Badges Skeleton */}
+              <div className="flex flex-wrap gap-3">
+                <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                <div className="h-8 w-28 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+              </div>
+
+              {/* العنوان Skeleton */}
+              <div className="space-y-3">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+              </div>
+
+              {/* الملخص Skeleton */}
+              <div className="space-y-2 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
+              </div>
+            </div>
+
+            <div className="lg:w-1/2 lg:order-2">
+              {/* الصورة Skeleton */}
+              <div className="relative w-full h-80 sm:h-96 bg-gray-200 dark:bg-gray-700 rounded-3xl"></div>
+            </div>
+          </div>
+
+          {/* المحتوى Skeleton */}
+          <div className="mt-10 space-y-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/5"></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  );
+}
+
+// Error Component
+function ArticleError({ onRetry }: { onRetry: () => void }) {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="max-w-md mx-auto px-4 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 space-y-6">
+          <div className="text-6xl mb-4">📰</div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white arabic-heading">
+            لا يوجد هذا المقال
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 arabic-text">
+            عذراً، المقال الذي تبحث عنه غير موجود أو تم حذفه.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              onClick={() => router.push("/")}
+              className="bg-blue-600 hover:bg-blue-700 text-white arabic-text"
+            >
+              <ArrowRight className="ml-2 h-4 w-4" />
+              العودة للصفحة الرئيسية
+            </Button>
+            <Button
+              onClick={onRetry}
+              variant="outline"
+              className="arabic-text"
+            >
+              إعادة المحاولة
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   const { slug } = use(params);
+  const router = useRouter();
   const [article, setArticle] = useState<ApiArticle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<ApiArticle[]>([]);
+
+  // تحديث Metadata ديناميكياً
+  useEffect(() => {
+    if (article) {
+      // تحديث Title
+      document.title = `${article.title} | موقع الأخبار العربية`;
+      
+      // تحديث Description
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', article.summary || article.title);
+      } else {
+        const meta = document.createElement('meta');
+        meta.name = 'description';
+        meta.content = article.summary || article.title;
+        document.head.appendChild(meta);
+      }
+
+      // تحديث Open Graph
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) {
+        ogTitle.setAttribute('content', article.title);
+      } else {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', 'og:title');
+        meta.content = article.title;
+        document.head.appendChild(meta);
+      }
+
+      const ogDescription = document.querySelector('meta[property="og:description"]');
+      if (ogDescription) {
+        ogDescription.setAttribute('content', article.summary || article.title);
+      } else {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', 'og:description');
+        meta.content = article.summary || article.title;
+        document.head.appendChild(meta);
+      }
+
+      const ogImage = document.querySelector('meta[property="og:image"]');
+      const imageUrl = article.imageUrl || `https://picsum.photos/1200/600?random=${article.id}`;
+      if (ogImage) {
+        ogImage.setAttribute('content', imageUrl);
+      } else {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', 'og:image');
+        meta.content = imageUrl;
+        document.head.appendChild(meta);
+      }
+    }
+
+    // تنظيف عند unmount
+    return () => {
+      document.title = "موقع الأخبار العربية";
+    };
+  }, [article]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,14 +200,37 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
       if (!article) return;
 
       try {
-        const response = await getArticles(1, 12);
-        const sameCategory = response.data
-          .filter(
-            (item) =>
-              item.slug !== article.slug &&
-              item.categoryName === article.categoryName
-          )
-          .slice(0, 4);
+        // جلب جميع المقالات
+        let allArticles: ApiArticle[] = [];
+        let page = 1;
+        const pageSize = 100;
+        let hasMore = true;
+
+        while (hasMore) {
+          try {
+            const response = await getArticles(page, pageSize);
+            if (response.data && response.data.length > 0) {
+              allArticles = [...allArticles, ...response.data];
+              if (response.data.length < pageSize) {
+                hasMore = false;
+              } else {
+                page++;
+              }
+            } else {
+              hasMore = false;
+            }
+          } catch (err) {
+            console.error("Error fetching articles page:", err);
+            hasMore = false;
+          }
+        }
+
+        // فلترة المقالات من نفس التصنيف
+        const sameCategory = allArticles.filter(
+          (item) =>
+            item.slug !== article.slug &&
+            item.categoryName === article.categoryName
+        );
 
         setRelatedArticles(sameCategory);
       } catch (err) {
@@ -66,22 +241,34 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     fetchRelatedArticles();
   }, [article]);
 
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    const fetchData = async () => {
+      try {
+        const articleData = await getArticleBySlug(slug);
+        if (articleData) {
+          setArticle(articleData);
+          setError(null);
+        } else {
+          setError("لم يتم العثور على المقال");
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError("حدث خطأ في جلب البيانات");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  };
+
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center py-12">
-            <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
-              جاري التحميل...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <ArticleSkeleton />;
   }
 
   if (error || !article) {
-    notFound();
+    return <ArticleError onRetry={handleRetry} />;
   }
 
   const imageUrl =
@@ -90,6 +277,18 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        {/* زر العودة للصفحة الرئيسية */}
+        <div>
+          <Button
+            onClick={() => router.push("/")}
+            variant="outline"
+            className="arabic-text"
+          >
+            <ArrowRight className="ml-2 h-4 w-4" />
+            العودة للصفحة الرئيسية
+          </Button>
+        </div>
+
         <article className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden p-6 sm:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
             <div className="lg:w-1/2 lg:order-1 space-y-6">
@@ -135,7 +334,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
 
           <div className="mt-10 space-y-8">
             <div
-              className="prose prose-lg max-w-none arabic-text text-gray-800 dark:text-gray-200"
+              className="article-content arabic-text text-gray-800 dark:text-gray-200"
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
 

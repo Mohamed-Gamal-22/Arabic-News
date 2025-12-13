@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import TinyMCEEditor from "@/components/TinyMCEEditor";
 import {
   Dialog,
   DialogContent,
@@ -30,12 +31,18 @@ import {
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
 import { createArticle } from "@/lib/api";
-import { getCategories, Category } from "@/lib/api";
-import { getCategoriesWithToken } from "@/lib/superAdminApi";
+import { Category } from "@/lib/api";
+import {
+  getCategoriesWithToken,
+  getCurrentUser,
+  CurrentUserProfile,
+} from "@/lib/superAdminApi";
+import { getCurrentUserMe } from "@/lib/api";
 
 export default function AdminCreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,15 +83,77 @@ export default function AdminCreateArticlePage() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
 
+  const normalizeCategoryIds = (userData: any) => {
+    const fromArray =
+      userData?.categoryIds ||
+      userData?.CategoryIds ||
+      userData?.categories?.map((c: any) => c.id ?? c.categoryId) ||
+      [];
+
+    const fromStringList =
+      typeof fromArray === "string" ? fromArray.split(",") : fromArray;
+
+    const fromNestedString =
+      Array.isArray(fromArray) && fromArray.length === 0 && typeof userData?.categoryIds === "string"
+        ? userData.categoryIds.split(",")
+        : null;
+
+    const raw = fromNestedString || fromStringList || [];
+
+    return (Array.isArray(raw) ? raw : [raw])
+      .map((id: any) => Number(id))
+      .filter((id: number) => !isNaN(id));
+  };
+
   useEffect(() => {
     const fetchAllCategories = async () => {
       if (!session?.accessToken) return;
 
       try {
-        // جلب جميع التصنيفات بدون أي قيود
+        // جلب بيانات الأدمن الحالية لتحديد التصنيفات المسموح بها
+        let userData = await getCurrentUser(session.accessToken);
+
+        // إذا لم تُرجع getCurrentUser تصنيفات، جرّب /authentication/me
+        if (!userData || (!userData.categoryIds && !userData.categories)) {
+          const meData = await getCurrentUserMe(session.accessToken);
+          if (meData) {
+            userData = {
+              ...userData,
+              ...meData,
+              categoryIds: meData.categoryIds ?? meData.CategoryIds ?? userData?.categoryIds,
+              categories: meData.categories ?? userData?.categories,
+            };
+          }
+        }
+
+        setCurrentUser(userData);
+
         const allCategories = await getCategoriesWithToken(session.accessToken);
-        console.log("✅ All categories loaded for admin:", allCategories);
-        setCategories(allCategories || []);
+
+        const allowedCategoryIds = normalizeCategoryIds(userData);
+        const allowedCategoriesFromUser = (userData?.categories || []).map(
+          (c: any) => ({
+            ...c,
+            id: c.id ?? c.categoryId,
+          })
+        );
+
+        console.log("user categories:", userData?.categories);
+        console.log("allowedCategoryIds:", allowedCategoryIds);
+
+        // عرض التصنيفات المسموح بها للأدمن:
+        // - إذا وجدنا categoryIds نستخدمها للفلترة من القائمة الكاملة.
+        // - إذا كانت categoryIds فارغة نستخدم ما رجع في categories مباشرة.
+        const filteredCategories =
+          allowedCategoryIds.length > 0
+            ? (allCategories || []).filter((cat: any) =>
+                allowedCategoryIds.includes(Number(cat.id ?? cat.categoryId))
+              )
+            : allowedCategoriesFromUser;
+
+        console.log("filteredCategories:", filteredCategories);
+
+        setCategories(filteredCategories);
         setError(null);
       } catch (err: any) {
         console.error("❌ Error fetching categories:", err);
@@ -204,9 +273,25 @@ export default function AdminCreateArticlePage() {
 
       // استخدام الأسماء الصحيحة حسب API .NET - CategoryId يجب أن يكون رقم (number)
       const categoryId = formData.categoryId ? Number(formData.categoryId) : null;
-      
+
       if (!categoryId || isNaN(categoryId)) {
         setErrorMessage("يجب اختيار قسم للمقال");
+        setShowErrorModal(true);
+        setLoading(false);
+        return;
+      }
+
+      // التحقق من أن القسم ضمن التصنيفات المسموح بها للأدمن
+      const allowedCategoryIds =
+        currentUser?.categoryIds && currentUser.categoryIds.length > 0
+          ? currentUser.categoryIds
+          : currentUser?.categories?.map((c: any) => c.id ?? c.categoryId) || [];
+
+      if (
+        allowedCategoryIds.length > 0 &&
+        !allowedCategoryIds.includes(categoryId)
+      ) {
+        setErrorMessage("لا يمكن إضافة مقال خارج التصنيفات المسموح بها لك");
         setShowErrorModal(true);
         setLoading(false);
         return;
@@ -312,15 +397,13 @@ export default function AdminCreateArticlePage() {
                 <Label htmlFor="content" className="arabic-text">
                   المحتوى *
                 </Label>
-                <Textarea
-                  id="content"
-                  name="content"
-                  required
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  className="mt-1"
-                  rows={10}
-                />
+                <div className="mt-1">
+                  <TinyMCEEditor
+                    value={formData.content}
+                    onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                    placeholder="اكتب محتوى المقالة هنا..."
+                  />
+                </div>
               </div>
 
               <div>

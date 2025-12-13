@@ -21,23 +21,26 @@ import { Pagination } from "@/components/ui/pagination";
 export default function WriterDashboard() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(null);
-  const [activeArticlesTab, setActiveArticlesTab] = useState<string>("approved");
-  
+  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(
+    null
+  );
+  const [activeArticlesTab, setActiveArticlesTab] =
+    useState<string>("approved");
+
   // States للمقالات الموافق عليها
   const [approvedArticles, setApprovedArticles] = useState<ApiArticle[]>([]);
   const [approvedPageIndex, setApprovedPageIndex] = useState(1);
   const [approvedPageSize, setApprovedPageSize] = useState(5);
   const [approvedTotalCount, setApprovedTotalCount] = useState(0);
   const [approvedLoading, setApprovedLoading] = useState(true);
-  
+
   // States للمقالات تحت المراجعة
   const [pendingArticles, setPendingArticles] = useState<ApiArticle[]>([]);
   const [pendingPageIndex, setPendingPageIndex] = useState(1);
   const [pendingPageSize, setPendingPageSize] = useState(5);
   const [pendingTotalCount, setPendingTotalCount] = useState(0);
   const [pendingLoading, setPendingLoading] = useState(true);
-  
+
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -149,7 +152,6 @@ export default function WriterDashboard() {
   const totalArticles = approvedTotalCount + pendingTotalCount;
   const publishedArticles = approvedTotalCount;
   const pendingArticlesCount = pendingTotalCount;
-  const draftArticles = 0; // سيتم تحديثه حسب API
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -164,7 +166,11 @@ export default function WriterDashboard() {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
                 {currentUser ? (
                   <span>
-                    مرحبا {currentUser.displayName || currentUser.fullName || currentUser.userName} (كاتب)
+                    مرحبا{" "}
+                    {currentUser.displayName ||
+                      currentUser.fullName ||
+                      currentUser.userName}{" "}
+                    (كاتب)
                   </span>
                 ) : (
                   "داشبورد الكاتب"
@@ -178,7 +184,7 @@ export default function WriterDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* الإحصائيات */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -215,19 +221,6 @@ export default function WriterDashboard() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                المسودات
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-600">
-                {draftArticles}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* الإجراءات السريعة */}
@@ -240,13 +233,11 @@ export default function WriterDashboard() {
             </CardHeader>
             <CardContent>
               <div className="flex space-x-4 space-x-reverse">
-                <Button asChild>
+                <Button
+                  asChild
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   <Link href="/dashboard/writer/create">إنشاء مقالة جديدة</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard/writer/articles">
-                    عرض جميع المقالات
-                  </Link>
                 </Button>
               </div>
             </CardContent>
@@ -262,24 +253,28 @@ export default function WriterDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeArticlesTab} onValueChange={setActiveArticlesTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 flex-row-reverse">
+            <Tabs
+              value={activeArticlesTab}
+              onValueChange={setActiveArticlesTab}
+              className="w-full"
+            >
+              <TabsList className="flex w-full mb-6 flex-row-reverse gap-6 justify-start">
                 <TabsTrigger
                   value="approved"
-                  className="arabic-text flex-row-reverse data-[state=active]:bg-green-600 data-[state=active]:text-white"
+                  className="arabic-text flex-row-reverse data-[state=active]:bg-green-600 data-[state=active]:text-white flex-1"
                 >
                   المقالات الموافق عليها ({approvedTotalCount})
                 </TabsTrigger>
                 <TabsTrigger
                   value="pending"
-                  className="arabic-text flex-row-reverse data-[state=active]:bg-yellow-500 data-[state=active]:text-gray-900"
+                  className="arabic-text flex-row-reverse data-[state=active]:bg-yellow-500 data-[state=active]:text-gray-900 flex-1"
                 >
                   المقالات تحت المراجعة ({pendingTotalCount})
                 </TabsTrigger>
               </TabsList>
 
               {/* تاب المقالات الموافق عليها */}
-              <TabsContent value="approved">
+              <TabsContent className="w-full" value="approved">
                 {approvedLoading ? (
                   <div className="text-center py-8">
                     <p className="text-gray-600 dark:text-gray-400 arabic-text">
@@ -302,7 +297,7 @@ export default function WriterDashboard() {
                       {approvedArticles.map((article) => (
                         <div
                           key={article.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
+                          className="flex items-center justify-between p-4 border rounded-lg w-full"
                         >
                           <div className="flex-1">
                             <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
@@ -311,9 +306,9 @@ export default function WriterDashboard() {
                             <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
                               <span>
                                 📅{" "}
-                                {new Date(article.publishedAt).toLocaleDateString(
-                                  "ar-EG"
-                                )}
+                                {new Date(
+                                  article.publishedAt
+                                ).toLocaleDateString("ar-EG")}
                               </span>
                               <span>🏷️ {article.categoryName}</span>
                             </div>
@@ -323,7 +318,9 @@ export default function WriterDashboard() {
                               variant="outline"
                               size="sm"
                               onClick={() =>
-                                router.push(`/dashboard/writer/article/${article.id}`)
+                                router.push(
+                                  `/dashboard/writer/article/${article.id}`
+                                )
                               }
                             >
                               عرض التفاصيل
@@ -338,7 +335,9 @@ export default function WriterDashboard() {
                       <div className="mt-6 flex justify-center">
                         <Pagination
                           currentPage={approvedPageIndex}
-                          totalPages={Math.ceil(approvedTotalCount / approvedPageSize)}
+                          totalPages={Math.ceil(
+                            approvedTotalCount / approvedPageSize
+                          )}
                           onPageChange={handleApprovedPageChange}
                         />
                       </div>
@@ -348,7 +347,7 @@ export default function WriterDashboard() {
               </TabsContent>
 
               {/* تاب المقالات تحت المراجعة */}
-              <TabsContent value="pending">
+              <TabsContent className="w-full" value="pending">
                 {pendingLoading ? (
                   <div className="text-center py-8">
                     <p className="text-gray-600 dark:text-gray-400 arabic-text">
@@ -371,7 +370,7 @@ export default function WriterDashboard() {
                       {pendingArticles.map((article) => (
                         <div
                           key={article.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
+                          className="flex items-center justify-between p-4 border rounded-lg w-full"
                         >
                           <div className="flex-1">
                             <h3 className="font-medium text-gray-900 dark:text-white arabic-heading">
@@ -380,9 +379,9 @@ export default function WriterDashboard() {
                             <div className="flex items-center space-x-4 space-x-reverse mt-2 text-sm text-gray-600 dark:text-gray-400">
                               <span>
                                 📅{" "}
-                                {new Date(article.publishedAt).toLocaleDateString(
-                                  "ar-EG"
-                                )}
+                                {new Date(
+                                  article.publishedAt
+                                ).toLocaleDateString("ar-EG")}
                               </span>
                               <span>🏷️ {article.categoryName}</span>
                             </div>
@@ -392,7 +391,9 @@ export default function WriterDashboard() {
                               variant="outline"
                               size="sm"
                               onClick={() =>
-                                router.push(`/dashboard/writer/article/${article.id}?isPending=true`)
+                                router.push(
+                                  `/dashboard/writer/article/${article.id}?isPending=true`
+                                )
                               }
                             >
                               عرض التفاصيل
@@ -407,7 +408,9 @@ export default function WriterDashboard() {
                       <div className="mt-6 flex justify-center">
                         <Pagination
                           currentPage={pendingPageIndex}
-                          totalPages={Math.ceil(pendingTotalCount / pendingPageSize)}
+                          totalPages={Math.ceil(
+                            pendingTotalCount / pendingPageSize
+                          )}
                           onPageChange={handlePendingPageChange}
                         />
                       </div>

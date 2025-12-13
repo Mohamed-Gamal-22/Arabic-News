@@ -52,7 +52,7 @@ export default function Header({ categories }: HeaderProps) {
           </div>
 
           {/* شريط التنقل - الشاشة الكبيرة */}
-          <nav className="hidden md:flex space-x-6 space-x-reverse">
+          <nav className="hidden md:flex gap-6 flex-row-reverse">
             {mainCategories.map((category) => {
               const categorySubCategories = getSubCategories(category.id);
 
@@ -60,7 +60,7 @@ export default function Header({ categories }: HeaderProps) {
                 <div key={category.id} className="relative group">
                   <Link
                     href={`/category/${category.slug}`}
-                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center whitespace-nowrap"
                   >
                     {category.name}
                     {categorySubCategories.length > 0 && (

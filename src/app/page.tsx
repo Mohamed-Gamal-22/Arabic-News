@@ -4,134 +4,231 @@ import { useState, useEffect } from "react";
 import ArticlesSlider from "@/components/ArticlesSlider";
 import ArticleCard from "@/components/ArticleCard";
 import { getArticles, ApiArticle } from "@/lib/api";
-import { Pagination } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
+import { ArrowUp } from "lucide-react";
+
+// Skeleton Loading للمقالات
+function ArticlesSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {[...Array(12)].map((_, index) => (
+          <div
+            key={index}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden animate-pulse"
+          >
+            {/* الصورة Skeleton */}
+            <div className="relative w-full h-48 bg-gray-200 dark:bg-gray-700"></div>
+
+            {/* المحتوى Skeleton */}
+            <div className="p-6 space-y-4">
+              {/* Badge Skeleton */}
+              <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+
+              {/* العنوان Skeleton */}
+              <div className="space-y-2">
+                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              </div>
+
+              {/* الملخص Skeleton */}
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              </div>
+
+              {/* Footer Skeleton */}
+              <div className="flex items-center justify-between pt-4">
+                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Skeleton Loading للأخبار العاجلة
+function TrendingSkeleton() {
+  return (
+    <div className="rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-2xl px-2 sm:px-6 lg:px-10 py-4">
+      <div className="relative w-full max-w-7xl lg:max-w-[90rem] xl:max-w-[95rem] mx-auto">
+        {/* الصورة الرئيسية Skeleton */}
+        <div className="relative w-full h-[200px] sm:h-[260px] md:h-[320px] lg:h-[380px] overflow-hidden rounded-3xl shadow-2xl mb-6 bg-gray-200 dark:bg-gray-700 animate-pulse">
+          {/* المحتوى Skeleton */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <div className="h-6 w-24 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+              <div className="space-y-2">
+                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+              </div>
+              <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-2/3"></div>
+              <div className="flex items-center space-x-4 space-x-reverse">
+                <div className="h-4 w-32 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* الصور الصغيرة Skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-5 px-1">
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={index}
+              className="relative h-32 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse"
+            ></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Error Component
+function HomeError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="max-w-md mx-auto px-4 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 space-y-6">
+          <div className="text-6xl mb-4">📰</div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white arabic-heading">
+            حدث خطأ في تحميل الصفحة
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 arabic-text">
+            عذراً، حدث خطأ أثناء جلب البيانات. يرجى المحاولة مرة أخرى.
+          </p>
+          <Button
+            onClick={onRetry}
+            className="bg-blue-600 hover:bg-blue-700 text-white arabic-text"
+          >
+            إعادة المحاولة
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Scroll to Top Button Component
+function ScrollToTop() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    window.addEventListener("scroll", toggleVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", toggleVisibility);
+    };
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={scrollToTop}
+      className="fixed bottom-8 left-8 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+      aria-label="العودة لأعلى الصفحة"
+    >
+      <ArrowUp className="h-5 w-5" />
+    </button>
+  );
+}
 
 export default function Home() {
-  const PAGE_SIZE = 12;
   const [trendingArticles, setTrendingArticles] = useState<ApiArticle[]>([]);
   const [regularArticles, setRegularArticles] = useState<ApiArticle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
-  const [effectivePageSize, setEffectivePageSize] = useState(PAGE_SIZE);
-  const [serverPageIndex, setServerPageIndex] = useState(1);
 
   useEffect(() => {
     const fetchArticles = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        console.log("=== Fetching Articles ===");
-        console.log("Requested client page:", page);
-        console.log("Client page size:", PAGE_SIZE);
+        console.log("=== Fetching All Articles ===");
 
-        const [trendingResponse, initialResponse] = await Promise.all([
-          getArticles(1, 10, true),
-          getArticles(page, PAGE_SIZE),
-        ]);
-
+        // جلب الأخبار العاجلة
+        const trendingResponse = await getArticles(1, 10, true);
         setTrendingArticles(trendingResponse.data || []);
+        setTrendingLoading(false);
 
-        const totalItems = initialResponse.totalCount || 0;
-        const apiPageSize =
-          initialResponse.pageSize ||
-          initialResponse.data?.length ||
-          PAGE_SIZE;
+        // جلب جميع المقالات
+        let allArticles: ApiArticle[] = [];
+        let page = 1;
+        const pageSize = 100;
+        let hasMore = true;
 
-        const totalClientPages = Math.max(
-          1,
-          Math.ceil(totalItems / PAGE_SIZE)
-        );
-        const clampedPage = Math.min(Math.max(page, 1), totalClientPages);
-        const startIndex = (clampedPage - 1) * PAGE_SIZE;
-        const remainingItems = Math.max(totalItems - startIndex, 0);
-        const desiredCount = Math.min(PAGE_SIZE, remainingItems);
-
-        console.log("=== API Response ===");
-        console.log("API page size:", apiPageSize);
-        console.log("Total items:", totalItems);
-        console.log("Client total pages:", totalClientPages);
-        console.log("Desired items this client page:", desiredCount);
-
-        if (desiredCount <= 0) {
-          setRegularArticles([]);
-          setTotalCount(totalItems);
-          setEffectivePageSize(PAGE_SIZE);
-          setServerPageIndex(clampedPage);
-          return;
+        while (hasMore) {
+          try {
+            const articlesResponse = await getArticles(page, pageSize);
+            if (articlesResponse.data && articlesResponse.data.length > 0) {
+              allArticles = [...allArticles, ...articlesResponse.data];
+              // إذا كان عدد المقالات أقل من pageSize، يعني انتهينا
+              if (articlesResponse.data.length < pageSize) {
+                hasMore = false;
+              } else {
+                page++;
+              }
+            } else {
+              hasMore = false;
+            }
+          } catch (err) {
+            console.error("Error fetching articles page:", err);
+            hasMore = false;
+          }
         }
 
-        let neededServerPage =
-          Math.floor(startIndex / apiPageSize) + 1 || clampedPage;
+        setRegularArticles(allArticles);
+        setTotalCount(allArticles.length);
 
-        let currentResponse =
-          (initialResponse.pageIndex || page) === neededServerPage
-            ? initialResponse
-            : await getArticles(neededServerPage, PAGE_SIZE);
-
-        let currentData = currentResponse.data || [];
-        let offset = startIndex - (neededServerPage - 1) * apiPageSize;
-        offset = Math.max(offset, 0);
-
-        const collected: ApiArticle[] = [];
-
-        while (
-          collected.length < desiredCount &&
-          currentData &&
-          currentData.length > 0
-        ) {
-          if (offset < currentData.length) {
-            const slice = currentData.slice(offset);
-            collected.push(...slice);
-            offset = 0;
-          } else {
-            offset -= currentData.length;
-          }
-
-          if (collected.length >= desiredCount) {
-            break;
-          }
-
-          neededServerPage += 1;
-          currentResponse = await getArticles(neededServerPage, PAGE_SIZE);
-          currentData = currentResponse.data || [];
-        }
-
-        setRegularArticles(collected.slice(0, desiredCount));
-        setTotalCount(totalItems);
-        setEffectivePageSize(PAGE_SIZE);
-        setServerPageIndex(clampedPage);
-
-        console.log("=== Home Articles API Response ===");
-        console.log("Request Page:", page);
-        console.log("Request Page Size:", PAGE_SIZE);
-        console.log("Response PageIndex:", initialResponse.pageIndex);
-        console.log("Response Page Size:", initialResponse.pageSize);
-        console.log("Total Count:", totalItems);
-        console.log(
-          "Articles in this page:",
-          collected.length
-        );
-        console.log(
-          "Total Pages:",
-          totalClientPages
-        );
+        console.log("=== All Articles Fetched ===");
+        console.log("Total Articles:", allArticles.length);
       } catch (error) {
         console.error("Error fetching articles:", error);
+        setError("حدث خطأ في جلب البيانات");
       } finally {
         setLoading(false);
       }
     };
 
     fetchArticles();
-  }, [page]);
+  }, []);
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    setTrendingLoading(true);
   };
 
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const hasPagination = totalCount > PAGE_SIZE;
+  // Error State
+  if (error && !loading && regularArticles.length === 0) {
+    return <HomeError onRetry={handleRetry} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -152,7 +249,9 @@ export default function Home() {
               الأخبار العاجلة
             </h2>
 
-            {trendingArticles.length > 0 ? (
+            {trendingLoading ? (
+              <TrendingSkeleton />
+            ) : trendingArticles.length > 0 ? (
               <div className="rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-2xl px-2 sm:px-6 lg:px-10 py-4">
                 <ArticlesSlider articles={trendingArticles} />
               </div>
@@ -174,32 +273,15 @@ export default function Home() {
             </h2>
           </div>
           {loading ? (
-            <div className="text-center py-12">
-              <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
-                جاري التحميل...
-              </p>
-            </div>
+            <ArticlesSkeleton />
           ) : regularArticles.length > 0 ? (
-            <>
-              <div className="max-w-6xl mx-auto">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                  {regularArticles.map((article) => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
+            <div className="max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                {regularArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
               </div>
-
-              {/* Pagination */}
-              {hasPagination && (
-                <div className="mt-6 flex justify-center">
-                  <Pagination
-                    currentPage={serverPageIndex}
-                    totalPages={Math.max(1, totalPages)}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              )}
-            </>
+            </div>
           ) : (
             <div className="text-center py-12">
               <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
@@ -209,6 +291,9 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   );
 }

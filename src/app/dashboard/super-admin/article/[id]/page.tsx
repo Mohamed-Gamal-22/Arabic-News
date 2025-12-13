@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { LoadingButton } from "@/components/ui/loading-button";
 import {
@@ -28,6 +28,7 @@ export default function ReviewArticle({
 }) {
   const router = useRouter();
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const resolvedParams = use(params);
   const [article, setArticle] = useState<ApiArticle | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
@@ -38,6 +39,10 @@ export default function ReviewArticle({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const sourceTab = searchParams.get("tab");
+  const cameFromApprovedTab = sourceTab === "approved";
+  const cameFromPendingTab = sourceTab === "pending";
+  const canApprove = !cameFromApprovedTab && (cameFromPendingTab || article?.isPending);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -299,23 +304,25 @@ export default function ReviewArticle({
                 loading={processing}
                 loadingText="جاري المعالجة..."
               >
-                رفض المقالة وحذفها
+                حذف
               </LoadingButton>
-              <LoadingButton asChild variant="outline" disabled={processing}>
+              <LoadingButton asChild disabled={processing} className="bg-yellow-500 hover:bg-yellow-600 text-white">
                 <Link
                   href={`/dashboard/super-admin/article/${article.id}/edit`}
                 >
                   تعديل
                 </Link>
               </LoadingButton>
-              <LoadingButton
-                onClick={handleApproveClick}
-                loading={processing}
-                disabled={!categories.length}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                موافقة
-              </LoadingButton>
+              {canApprove && (
+                <LoadingButton
+                  onClick={handleApproveClick}
+                  loading={processing}
+                  disabled={!categories.length}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  موافقة
+                </LoadingButton>
+              )}
             </div>
           </>
         ) : null}
