@@ -1,5 +1,6 @@
-import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import type { JWT } from "next-auth/jwt";
+import type { Session, User } from "next-auth";
 
 // دالة لاستخراج الصلاحيات من JWT token
 function decodeJWT(token: string): Record<string, unknown> | null {
@@ -25,7 +26,7 @@ function decodeJWT(token: string): Record<string, unknown> | null {
   }
 }
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -131,7 +132,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user?: User }) {
       // عند تسجيل الدخول الأول
       if (user) {
         console.log("=== JWT Callback - First Login ===");
@@ -172,7 +173,7 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       console.log("=== Session Callback ===");
       console.log("Token ID:", token.id);
       console.log("Token Role:", token.role);

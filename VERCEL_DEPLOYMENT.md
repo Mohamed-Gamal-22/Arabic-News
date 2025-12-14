@@ -81,21 +81,27 @@ vercel
 ### 7. المشاكل الشائعة وحلولها
 
 #### المشكلة: Build fails بسبب Environment Variables
+
 **الحل**: تأكد من إضافة جميع Environment Variables في Vercel Dashboard
 
 #### المشكلة: NextAuth لا يعمل
+
 **الحل**: تأكد من:
+
 - إضافة `NEXTAUTH_SECRET` و `NEXTAUTH_URL` بشكل صحيح
 - `NEXTAUTH_URL` يجب أن يكون URL المشروع على Vercel
 
 #### المشكلة: API calls تفشل
+
 **الحل**: تأكد من:
+
 - إضافة `NEXT_PUBLIC_API_URL` بشكل صحيح
 - أن API server يسمح بـ CORS من domain Vercel
 
 ### 8. التحقق من النشر
 
 بعد النشر، تحقق من:
+
 - ✅ الصفحة الرئيسية تعمل
 - ✅ تسجيل الدخول يعمل
 - ✅ API calls تعمل
@@ -104,7 +110,6 @@ vercel
 ## الدعم
 
 إذا واجهت أي مشاكل، راجع:
+
 - [Vercel Documentation](https://vercel.com/docs)
 - [Next.js Deployment Guide](https://nextjs.org/docs/deployment)
-
-

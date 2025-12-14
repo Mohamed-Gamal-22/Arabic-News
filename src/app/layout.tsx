@@ -38,7 +38,12 @@ export default async function RootLayout({
         <AuthProvider>
           <Header categories={categories} />
           <main>{children}</main>
-          <Footer categories={categories} />
+          <Footer categories={categories.map(cat => ({
+            id: typeof cat.id === 'string' ? parseInt(cat.id, 10) : (typeof cat.id === 'number' ? cat.id : 0),
+            name: cat.name,
+            slug: cat.slug,
+            parentId: ('parentId' in cat && cat.parentId !== undefined) ? (cat as { parentId: number | null }).parentId : null,
+          }))} />
         </AuthProvider>
       </body>
     </html>

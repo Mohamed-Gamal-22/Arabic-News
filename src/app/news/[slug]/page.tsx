@@ -94,11 +94,7 @@ function ArticleError({ onRetry }: { onRetry: () => void }) {
               <ArrowRight className="ml-2 h-4 w-4" />
               العودة للصفحة الرئيسية
             </Button>
-            <Button
-              onClick={onRetry}
-              variant="outline"
-              className="arabic-text"
-            >
+            <Button onClick={onRetry} variant="outline" className="arabic-text">
               إعادة المحاولة
             </Button>
           </div>
@@ -121,14 +117,19 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
     if (article) {
       // تحديث Title
       document.title = `${article.title} | موقع الأخبار العربية`;
-      
+
       // تحديث Description
-      const metaDescription = document.querySelector('meta[name="description"]');
+      const metaDescription = document.querySelector(
+        'meta[name="description"]'
+      );
       if (metaDescription) {
-        metaDescription.setAttribute('content', article.summary || article.title);
+        metaDescription.setAttribute(
+          "content",
+          article.summary || article.title
+        );
       } else {
-        const meta = document.createElement('meta');
-        meta.name = 'description';
+        const meta = document.createElement("meta");
+        meta.name = "description";
         meta.content = article.summary || article.title;
         document.head.appendChild(meta);
       }
@@ -136,31 +137,35 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
       // تحديث Open Graph
       const ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) {
-        ogTitle.setAttribute('content', article.title);
+        ogTitle.setAttribute("content", article.title);
       } else {
-        const meta = document.createElement('meta');
-        meta.setAttribute('property', 'og:title');
+        const meta = document.createElement("meta");
+        meta.setAttribute("property", "og:title");
         meta.content = article.title;
         document.head.appendChild(meta);
       }
 
-      const ogDescription = document.querySelector('meta[property="og:description"]');
+      const ogDescription = document.querySelector(
+        'meta[property="og:description"]'
+      );
       if (ogDescription) {
-        ogDescription.setAttribute('content', article.summary || article.title);
+        ogDescription.setAttribute("content", article.summary || article.title);
       } else {
-        const meta = document.createElement('meta');
-        meta.setAttribute('property', 'og:description');
+        const meta = document.createElement("meta");
+        meta.setAttribute("property", "og:description");
         meta.content = article.summary || article.title;
         document.head.appendChild(meta);
       }
 
       const ogImage = document.querySelector('meta[property="og:image"]');
-      const imageUrl = article.imageUrl || `https://picsum.photos/1200/600?random=${article.id}`;
+      const imageUrl =
+        article.imageUrl ||
+        `https://picsum.photos/1200/600?random=${article.id}`;
       if (ogImage) {
-        ogImage.setAttribute('content', imageUrl);
+        ogImage.setAttribute("content", imageUrl);
       } else {
-        const meta = document.createElement('meta');
-        meta.setAttribute('property', 'og:image');
+        const meta = document.createElement("meta");
+        meta.setAttribute("property", "og:image");
         meta.content = imageUrl;
         document.head.appendChild(meta);
       }
@@ -336,7 +341,9 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
           <div className="mt-10 space-y-8">
             <div
               className="article-content arabic-text text-gray-800 dark:text-gray-200"
-              dangerouslySetInnerHTML={{ __html: convertVideoLinksToEmbeds(article.content) }}
+              dangerouslySetInnerHTML={{
+                __html: convertVideoLinksToEmbeds(article.content),
+              }}
             />
 
             {article.keywords && (

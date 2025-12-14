@@ -460,6 +460,7 @@ export const updateArticle = async (
             errorDetails.errors &&
             typeof errorDetails.errors === "object"
           ) {
+            const errorDetailsObj = errorDetails as { errors: Record<string, unknown> };
             const fieldNames: Record<string, string> = {
               'Title': 'العنوان',
               'Content': 'المحتوى',
@@ -471,8 +472,8 @@ export const updateArticle = async (
             };
             
             const validationErrors: string[] = [];
-            Object.keys(errorDetails.errors).forEach((field) => {
-              const fieldErrors = (errorDetails.errors as Record<string, unknown>)[field];
+            Object.keys(errorDetailsObj.errors).forEach((field) => {
+              const fieldErrors = errorDetailsObj.errors[field];
               const arabicFieldName = fieldNames[field] || field;
               if (Array.isArray(fieldErrors)) {
                 fieldErrors.forEach((err: unknown) => {

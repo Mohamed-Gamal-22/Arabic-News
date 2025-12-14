@@ -307,3 +307,123 @@ body {
 .article-content h6 {
   font-size: 1rem;
 }
+
+/* Responsive video container - يملأ الصفحة بالكامل */
+.video-responsive {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  margin: 2rem 0;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  background: #000;
+  min-height: 400px;
+}
+
+.video-responsive iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 1rem;
+}
+
+/* على الشاشات الكبيرة، جعل الفيديو أكبر */
+@media (min-width: 768px) {
+  .video-responsive {
+    min-height: 500px;
+    margin: 2.5rem 0;
+    border-radius: 1.25rem;
+  }
+  
+  .video-responsive iframe {
+    border-radius: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .video-responsive {
+    min-height: 600px;
+    margin: 3rem 0;
+    border-radius: 1.5rem;
+  }
+  
+  .video-responsive iframe {
+    border-radius: 1.5rem;
+  }
+}
+
+/* في المقالات، جعل الفيديو يملأ العرض بالكامل */
+.article-content .video-responsive {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  display: block;
+}
+
+/* إخفاء أي روابط تحت أو بجانب الفيديو */
+.article-content .video-responsive + a,
+.article-content a + .video-responsive,
+.article-content p:has(+ .video-responsive) a,
+.article-content p:has(.video-responsive) a,
+.article-content .video-responsive ~ a,
+.article-content .video-responsive + p a,
+.article-content .video-responsive ~ p a,
+.article-content .video-responsive + * a {
+  display: none !important;
+}
+
+/* إزالة أي روابط داخل نفس السطر مع الفيديو */
+.article-content p:has(.video-responsive) a,
+.article-content p:has(.video-responsive) {
+  text-align: center;
+}
+
+.article-content p:has(.video-responsive) a {
+  display: none !important;
+}
+
+/* إخفاء أي نص أو روابط قبل أو بعد الفيديو مباشرة */
+.article-content .video-responsive + *:not(.video-responsive) {
+  margin-top: 0;
+  display: none !important;
+}
+
+.article-content *:has(+ .video-responsive) a {
+  display: none !important;
+}
+
+/* إخفاء أي عناصر تحتوي على rel="noopener noreferrer" أو target="_blank" بعد الفيديو */
+.article-content .video-responsive ~ *:has([rel*="noopener"]),
+.article-content .video-responsive ~ *:has([target="_blank"]),
+.article-content .video-responsive + *:has([rel*="noopener"]),
+.article-content .video-responsive + *:has([target="_blank"]) {
+  display: none !important;
+}
+
+/* إخفاء أي عناصر تظهر مباشرة بعد الفيديو (لإزالة الروابط والنصوص غير المرغوبة) */
+.article-content .video-responsive + p,
+.article-content .video-responsive + div:not(.video-responsive),
+.article-content .video-responsive + span,
+.article-content .video-responsive + a,
+.article-content .video-responsive ~ p,
+.article-content .video-responsive ~ div:not(.video-responsive),
+.article-content .video-responsive ~ span {
+  display: none !important;
+}
+
+/* إخفاء أي نص يظهر مباشرة بعد الفيديو */
+.article-content .video-responsive + * {
+  display: none !important;
+}
+
+/* تحسينات للفيديو في الوضع الداكن */
+.dark .video-responsive {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+}

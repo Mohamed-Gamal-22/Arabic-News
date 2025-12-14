@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { articleSchema, type ArticleFormData } from "@/lib/validations";
+import { articleSchema } from "@/lib/validations";
+import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,17 +43,17 @@ export default function CreateArticleForm() {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<ArticleFormData>({
+  } = useForm<z.infer<typeof articleSchema>>({
     resolver: zodResolver(articleSchema),
     defaultValues: {
-      status: "draft",
+      status: "draft" as const,
       isTrending: false,
     },
   });
 
   const content = watch("content");
 
-  const onSubmit = async (data: ArticleFormData) => {
+  const onSubmit = async (data: z.infer<typeof articleSchema>) => {
     setIsLoading(true);
     try {
       console.log("بيانات المقالة:", data);

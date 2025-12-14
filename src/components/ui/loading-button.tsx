@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import { Loader2 } from "lucide-react";
-import { Button, ButtonProps } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
-export interface LoadingButtonProps extends Omit<ButtonProps, 'children'> {
+export interface LoadingButtonProps extends Omit<ComponentProps<typeof Button>, 'children'> {
   loading?: boolean;
   loadingText?: string;
   children?: React.ReactNode;

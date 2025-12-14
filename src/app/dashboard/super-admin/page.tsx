@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -62,14 +62,14 @@ interface ApiCategory {
   parentId: number | null;
 }
 
-export default function SuperAdminDashboard() {
+function SuperAdminDashboardContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const [users, setUsers] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [articles, setArticles] = useState<ApiArticle[]>([]);
   const [articlesPageIndex, setArticlesPageIndex] = useState(1);
-  // const [articlesPageSize, setArticlesPageSize] = useState(5); // unused
+  const [articlesPageSize] = useState(5); // fixed pageSize
   const [articlesTotal, setArticlesTotal] = useState(0);
   const [activeTab, setActiveTab] = useState<string>("articles");
   const [systemStats, setSystemStats] = useState({
@@ -95,8 +95,8 @@ export default function SuperAdminDashboard() {
   const [userToUpdateRole, setUserToUpdateRole] = useState<UserWithRoles | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
   const [roleUpdateLoading, setRoleUpdateLoading] = useState(false);
-  // const [roleUpdateSuccess, setRoleUpdateSuccess] = useState(""); // unused
-  // const [roleUpdateError, setRoleUpdateError] = useState(""); // unused
+  const [roleUpdateSuccess, setRoleUpdateSuccess] = useState("");
+  const [roleUpdateError, setRoleUpdateError] = useState("");
   const [showRoleResultModal, setShowRoleResultModal] = useState(false);
   const [roleResultMessage, setRoleResultMessage] = useState("");
   const [roleResultType, setRoleResultType] = useState<"success" | "error">(
@@ -151,7 +151,7 @@ export default function SuperAdminDashboard() {
           getCategoriesWithToken(session.accessToken),
           getArticles(
             articlesPageIndex,
-            articlesPageSize,
+            5, // pageSize fixed to 5
             undefined,
             session.accessToken
           ),
@@ -293,7 +293,7 @@ export default function SuperAdminDashboard() {
       // إغلاق Modal التحديث وعرض Modal الخطأ
       setShowRoleModal(false);
       setUserToUpdateRole(null);
-      setRoleResultMessage(error.message || "حدث خطأ في تحديث دور المستخدم");
+      setRoleResultMessage((error instanceof Error ? error.message : "حدث خطأ في تحديث دور المستخدم"));
       setRoleResultType("error");
       setShowRoleResultModal(true);
     } finally {
@@ -330,7 +330,7 @@ export default function SuperAdminDashboard() {
       }, 3000);
     } catch (error: unknown) {
       console.error("خطأ في حذف المستخدم:", error);
-      setDeleteError(error.message || "حدث خطأ في حذف المستخدم");
+      setDeleteError((error instanceof Error ? error.message : "حدث خطأ في حذف المستخدم"));
     } finally {
       setDeleteLoading(false);
     }
@@ -363,7 +363,7 @@ export default function SuperAdminDashboard() {
 
       // البحث عن السابكاتيجوريز وحذفها أولاً
       const subcategories = categories.filter(
-        (cat: { parentId?: number | null; id?: number }) => cat.parentId === categoryToDelete.id
+        (cat: ApiCategory) => cat.parentId === categoryToDelete.id
       );
 
       // حذف كل السابكاتيجوريز أولاً
@@ -406,7 +406,7 @@ export default function SuperAdminDashboard() {
       // إغلاق Modal الحذف وعرض Modal الخطأ
       setShowDeleteCategoryModal(false);
       setCategoryToDelete(null);
-      setDeleteResultMessage(error.message || "حدث خطأ في حذف الكاتيجوري");
+      setDeleteResultMessage((error instanceof Error ? error.message : "حدث خطأ في حذف الكاتيجوري"));
       setDeleteResultType("error");
       setShowDeleteResultModal(true);
     } finally {
@@ -432,7 +432,12 @@ export default function SuperAdminDashboard() {
     setCreateCategoryLoading(true);
 
     try {
-      await createCategory(session.accessToken, newCategoryData);
+      await createCategory(session.accessToken, {
+        name: newCategoryData.Name,
+        slug: newCategoryData.Slug,
+        description: newCategoryData.Description || null,
+        parentId: newCategoryData.ParentId,
+      });
       setCategoryResultMessage("تم إنشاء الكاتيجوري بنجاح!");
       setCategoryResultType("success");
 
@@ -455,7 +460,7 @@ export default function SuperAdminDashboard() {
       setShowCategoryResultModal(true);
     } catch (error: unknown) {
       console.error("خطأ في إنشاء الكاتيجوري:", error);
-      setCategoryResultMessage(error.message || "حدث خطأ في إنشاء الكاتيجوري");
+      setCategoryResultMessage((error instanceof Error ? error.message : "حدث خطأ في إنشاء الكاتيجوري"));
       setCategoryResultType("error");
 
       // إغلاق Modal الإضافة وعرض Modal الخطأ
@@ -1477,5 +1482,20 @@ export default function SuperAdminDashboard() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function SuperAdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">جاري التحميل...</p>
+        </div>
+      </div>
+    }>
+      <SuperAdminDashboardContent />
+    </Suspense>
   );
 }

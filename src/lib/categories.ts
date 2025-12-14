@@ -24,32 +24,28 @@ export async function getCategoriesServer(): Promise<Category[]> {
     // إرجاع تصنيفات ثابتة في حالة فشل الـ API
     return [
       {
-        id: 1,
+        id: "1",
         name: "Technology",
         slug: "technology",
         description: "Technology news",
-        parentId: null,
       },
       {
-        id: 2,
+        id: "2",
         name: "Sports",
         slug: "sports",
         description: "Sports news",
-        parentId: null,
       },
       {
-        id: 3,
+        id: "3",
         name: "Politics",
         slug: "politics",
         description: "Politics news",
-        parentId: null,
       },
       {
-        id: 4,
+        id: "4",
         name: "Football",
         slug: "football",
         description: "Football news",
-        parentId: 2,
       },
     ];
   }

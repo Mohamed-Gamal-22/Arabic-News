@@ -23,9 +23,9 @@ export const articleSchema = z.object({
   featuredImage: z.string()
     .min(1, 'يجب إضافة صورة رئيسية'),
   
-  status: z.enum(['draft', 'pending', 'published', 'rejected']).default('draft'),
+  status: z.enum(['draft', 'pending', 'published', 'rejected']),
   
-  isTrending: z.boolean().default(false),
+  isTrending: z.boolean(),
   
   trendingUntil: z.string().optional(),
 });
