@@ -24,17 +24,15 @@ export default function Header({ categories }: HeaderProps) {
   }
 
   // تنظيم التصنيفات إلى رئيسية وفرعية
-  const mainCategories = categories.filter((cat) => !('parentId' in cat) || (cat as { parentId?: number | null }).parentId === null);
-  const subCategories = categories.filter((cat) => 'parentId' in cat && (cat as { parentId?: number | null }).parentId !== null);
+  const mainCategories = categories.filter((cat) => !cat.parentId || cat.parentId === null);
+  const subCategories = categories.filter((cat) => cat.parentId && cat.parentId !== null);
 
   // دالة للحصول على التصنيفات الفرعية للتصنيف الرئيسي
   const getSubCategories = (parentId: string | number) => {
     const parentIdNum = typeof parentId === 'string' ? parseInt(parentId, 10) : parentId;
     return subCategories.filter((sub) => {
-      if (!('parentId' in sub)) return false;
-      const subParentId = (sub as { parentId?: number | string | null }).parentId;
-      if (subParentId === null || subParentId === undefined) return false;
-      const subParentIdNum = typeof subParentId === 'string' ? parseInt(subParentId, 10) : subParentId;
+      if (!sub.parentId) return false;
+      const subParentIdNum = typeof sub.parentId === 'string' ? parseInt(sub.parentId, 10) : sub.parentId;
       return subParentIdNum === parentIdNum;
     });
   };

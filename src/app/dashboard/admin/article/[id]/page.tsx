@@ -21,6 +21,8 @@ import { ApiArticle } from "@/lib/api";
 import { getCategoriesWithToken, ApiCategory } from "@/lib/superAdminApi";
 import Link from "next/link";
 import { AlertModal } from "@/components/ui/alert-modal";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function ReviewArticle({
   params,
@@ -240,6 +242,29 @@ export default function ReviewArticle({
               onApprove={handleApproveSubmit}
               loading={processing}
             />
+
+            {/* Alert لحالة المقالة */}
+            {cameFromPendingTab || (!cameFromApprovedTab && article?.isPending) ? (
+              <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
+                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                <AlertTitle className="arabic-heading text-yellow-800 dark:text-yellow-500 font-bold">
+                  ⏳ مقالة تحت المراجعة
+                </AlertTitle>
+                <AlertDescription className="arabic-text text-yellow-700 dark:text-yellow-400 mt-2">
+                  هذه المقالة تحت المراجعة حالياً. يمكنك مراجعتها والموافقة عليها أو تعديلها.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="mb-6 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+                <AlertCircle className="h-5 w-5 text-green-600 dark:text-green-500" />
+                <AlertTitle className="arabic-heading text-green-800 dark:text-green-500 font-bold">
+                  ✅ مقالة منشورة
+                </AlertTitle>
+                <AlertDescription className="arabic-text text-green-700 dark:text-green-400 mt-2">
+                  هذه المقالة منشورة حالياً. يمكنك تعديلها ولكن ستحتاج موافقة جديدة للنشر.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* معلومات المقال */}
             <Card className="mb-6">

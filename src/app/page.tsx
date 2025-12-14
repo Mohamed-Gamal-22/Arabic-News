@@ -6,6 +6,7 @@ import ArticleCard from "@/components/ArticleCard";
 import { getArticles, ApiArticle } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 
 // Skeleton Loading للمقالات
 function ArticlesSkeleton() {
@@ -163,51 +164,102 @@ export default function Home() {
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 12; // 12 مقالة في كل صفحة
 
+  // جلب المقالات عند تغيير الصفحة
   useEffect(() => {
     const fetchArticles = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        console.log("=== Fetching All Articles ===");
+        console.log("=== Fetching Articles ===");
+        console.log("Page:", currentPage);
+        console.log("PageSize constant:", pageSize);
+        console.log("Requesting 12 articles per page");
 
-        // جلب الأخبار العاجلة
-        const trendingResponse = await getArticles(1, 10, true);
-        setTrendingArticles(trendingResponse.data || []);
-        setTrendingLoading(false);
+        // جلب المقالات المنشورة فقط (isPending = false)
+        // حل بديل: إذا كان الـ API يعيد أقل من 12، نجلب صفحات إضافية
+        let allFetchedArticles: ApiArticle[] = [];
+        let pageToFetch = currentPage;
+        let totalArticlesCount = 0;
+        let maxPagesToFetch = 5; // حد أقصى 5 صفحات (لحماية من loop لا نهائي)
+        let pagesFetched = 0;
 
-        // جلب جميع المقالات
-        let allArticles: ApiArticle[] = [];
-        let page = 1;
-        const pageSize = 100;
-        let hasMore = true;
+        // جلب المقالات حتى نحصل على 12 مقالة أو نفاد المقالات
+        while (
+          allFetchedArticles.length < pageSize &&
+          pagesFetched < maxPagesToFetch
+        ) {
+          const articlesResponse = await getArticles(
+            pageToFetch,
+            pageSize, // طلب 12 مقالة من كل صفحة
+            false, // isTrending
+            undefined, // token
+            false // isPending = false للمقالات المنشورة فقط
+          );
 
-        while (hasMore) {
-          try {
-            const articlesResponse = await getArticles(page, pageSize);
-            if (articlesResponse.data && articlesResponse.data.length > 0) {
-              allArticles = [...allArticles, ...articlesResponse.data];
-              // إذا كان عدد المقالات أقل من pageSize، يعني انتهينا
-              if (articlesResponse.data.length < pageSize) {
-                hasMore = false;
-              } else {
-                page++;
-              }
-            } else {
-              hasMore = false;
+          if (articlesResponse && articlesResponse.data) {
+            const pageArticles = articlesResponse.data || [];
+            allFetchedArticles = [...allFetchedArticles, ...pageArticles];
+
+            // تحديث العدد الإجمالي من أول استجابة فقط
+            if (pagesFetched === 0) {
+              totalArticlesCount = articlesResponse.totalCount || 0;
             }
-          } catch (err: unknown) {
-            console.error("Error fetching articles page:", err);
-            hasMore = false;
+
+            pagesFetched++;
+
+            // إذا لم نحصل على مقالات جديدة، نتوقف
+            if (pageArticles.length === 0) {
+              break;
+            }
+
+            // إذا حصلنا على 12 مقالة أو أكثر، نتوقف
+            if (allFetchedArticles.length >= pageSize) {
+              break;
+            }
+
+            // إذا كانت المقالات أقل من المطلوب، نجلب الصفحة التالية
+            if (pageArticles.length < pageSize) {
+              pageToFetch++;
+            } else {
+              // إذا حصلنا على العدد المطلوب من هذه الصفحة، نتوقف
+              break;
+            }
+          } else {
+            break;
           }
         }
 
-        setRegularArticles(allArticles);
-        setTotalCount(allArticles.length);
+        // تحديد عدد المقالات للعرض (12 أو أقل إذا لم تكن متوفرة)
+        const articlesToShow = allFetchedArticles.slice(0, pageSize);
+        setRegularArticles(articlesToShow);
+        setTotalCount(totalArticlesCount);
 
-        console.log("=== All Articles Fetched ===");
-        console.log("Total Articles:", allArticles.length);
+        // حساب عدد الصفحات بناءً على العدد الإجمالي
+        const calculatedTotalPages = Math.ceil(
+          (totalArticlesCount || 0) / pageSize
+        );
+        setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
+
+        console.log("Articles fetched:", articlesToShow.length);
+        console.log("Expected: 12 articles per page");
+        console.log("Pages fetched:", pagesFetched);
+        console.log("Total count:", totalArticlesCount);
+        console.log("Total pages:", calculatedTotalPages);
+
+        // تحذير إذا لم نحصل على 12 مقالة
+        if (
+          articlesToShow.length < pageSize &&
+          totalArticlesCount > articlesToShow.length
+        ) {
+          console.warn(
+            `⚠️ Only received ${articlesToShow.length} articles, expected ${pageSize}. Total available: ${totalArticlesCount}`
+          );
+        }
       } catch (error: unknown) {
         console.error("Error fetching articles:", error);
         setError("حدث خطأ في جلب البيانات");
@@ -217,12 +269,42 @@ export default function Home() {
     };
 
     fetchArticles();
+  }, [currentPage]);
+
+  // جلب الأخبار العاجلة مرة واحدة فقط
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        setTrendingLoading(true);
+        const trendingResponse = await getArticles(
+          1,
+          10,
+          true,
+          undefined,
+          false
+        );
+        setTrendingArticles(trendingResponse.data || []);
+      } catch (error: unknown) {
+        console.error("Error fetching trending articles:", error);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+
+    fetchTrending();
   }, []);
 
   const handleRetry = () => {
     setError(null);
+    setCurrentPage(1);
     setLoading(true);
     setTrendingLoading(true);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // التمرير لأعلى الصفحة عند تغيير الصفحة
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Error State
@@ -275,13 +357,30 @@ export default function Home() {
           {loading ? (
             <ArticlesSkeleton />
           ) : regularArticles.length > 0 ? (
-            <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                {regularArticles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
+            <>
+              <div className="max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                  {regularArticles.map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
               </div>
-            </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="max-w-6xl mx-auto mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    className="justify-center"
+                  />
+                  <div className="text-center mt-4 text-sm text-gray-600 dark:text-gray-400 arabic-text">
+                    صفحة {currentPage} من {totalPages}
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-12">
               <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">

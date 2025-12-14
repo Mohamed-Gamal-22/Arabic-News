@@ -62,6 +62,14 @@ interface ApiCategory {
   parentId: number | null;
 }
 
+// دالة لتحويل الدور إلى العربية
+const getRoleInArabic = (role: string): string => {
+  if (role === "Writer" || role === "User") return "كاتب";
+  if (role === "Admin") return "أدمن";
+  if (role === "SuperAdmin") return "سوبر أدمن";
+  return "سوبر أدمن";
+};
+
 function SuperAdminDashboardContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
@@ -69,9 +77,20 @@ function SuperAdminDashboardContent() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [articles, setArticles] = useState<ApiArticle[]>([]);
   const [articlesPageIndex, setArticlesPageIndex] = useState(1);
-  const [articlesPageSize] = useState(5); // fixed pageSize
+  const [articlesPageSize] = useState(12); // 12 مقالة في كل صفحة
   const [articlesTotal, setArticlesTotal] = useState(0);
   const [activeTab, setActiveTab] = useState<string>("articles");
+  
+  // States for article tabs
+  const [activeArticlesTab, setActiveArticlesTab] = useState<"approved" | "pending">("pending");
+  const [approvedArticles, setApprovedArticles] = useState<ApiArticle[]>([]);
+  const [pendingArticles, setPendingArticles] = useState<ApiArticle[]>([]);
+  const [approvedPageIndex, setApprovedPageIndex] = useState(1);
+  const [pendingPageIndex, setPendingPageIndex] = useState(1);
+  const [approvedTotalCount, setApprovedTotalCount] = useState(0);
+  const [pendingTotalCount, setPendingTotalCount] = useState(0);
+  const [approvedLoading, setApprovedLoading] = useState(false);
+  const [pendingLoading, setPendingLoading] = useState(false);
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
     totalWriters: 0,
@@ -145,38 +164,14 @@ function SuperAdminDashboardContent() {
         setLoading(true);
         setError("");
 
-        // جلب المستخدمين والكاتيجوريز والمقالات
-        const [usersData, categoriesData, articlesData] = await Promise.all([
+        // جلب المستخدمين والكاتيجوريز
+        const [usersData, categoriesData] = await Promise.all([
           getUsers(session.accessToken),
           getCategoriesWithToken(session.accessToken),
-          getArticles(
-            articlesPageIndex,
-            5, // pageSize fixed to 5
-            undefined,
-            session.accessToken
-          ),
         ]);
 
         setUsers(usersData);
         setCategories(categoriesData);
-
-        // استخدام pageIndex من response، لكن نستخدم pageSize الذي أرسلناه (5)
-        setArticlesPageIndex(articlesData.pageIndex || articlesPageIndex);
-        // لا نحدث pageSize من response - نستخدم القيمة التي أرسلناها (5)
-        setArticlesTotal(articlesData.totalCount || 0);
-        setArticles(articlesData.data || []);
-
-        console.log("=== Articles API Response ===");
-        console.log("PageIndex sent:", articlesPageIndex);
-        console.log("PageSize sent:", articlesPageSize);
-        console.log("PageIndex from API:", articlesData.pageIndex);
-        console.log("PageSize from API:", articlesData.pageSize);
-        console.log("Total Count:", articlesData.totalCount);
-        console.log("Articles in this page:", articlesData.data?.length || 0);
-        console.log(
-          "Total Pages:",
-          Math.ceil(articlesData.totalCount / articlesPageSize)
-        );
 
         // حساب الإحصائيات من البيانات المسترجعة
         const stats = {
@@ -190,11 +185,9 @@ function SuperAdminDashboardContent() {
           totalSuperAdmins: usersData.filter(
             (user: UserWithRoles) => user.roles && user.roles.includes("SuperAdmin")
           ).length,
-          totalArticles: articlesData.totalCount || articles.length,
-          publishedArticles:
-            articlesData.data?.filter((a: ApiArticle) => a.publishedAt)
-              ?.length || 0,
-          pendingArticles: 0, // سيتم تحديثه حسب API
+          totalArticles: 0, // سيتم تحديثه من approved + pending
+          publishedArticles: 0, // سيتم تحديثه من approved
+          pendingArticles: 0, // سيتم تحديثه من pending
           rejectedArticles: 0, // سيتم تحديثه حسب API
         };
         setSystemStats(stats);
@@ -215,6 +208,92 @@ function SuperAdminDashboardContent() {
     setArticlesPageIndex(newPageIndex);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const handleApprovedPageChange = (newPageIndex: number) => {
+    setApprovedPageIndex(newPageIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handlePendingPageChange = (newPageIndex: number) => {
+    setPendingPageIndex(newPageIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Fetch approved articles
+  useEffect(() => {
+    const fetchApprovedArticles = async () => {
+      if (!session?.accessToken) return;
+      
+      try {
+        setApprovedLoading(true);
+        const response = await getArticles(
+          approvedPageIndex,
+          articlesPageSize,
+          undefined,
+          session.accessToken,
+          false // isPending = false for approved
+        );
+
+        if (response) {
+          setApprovedArticles(response.data || []);
+          setApprovedTotalCount(response.totalCount || 0);
+          
+          // Update stats
+          setSystemStats(prev => ({
+            ...prev,
+            publishedArticles: response.totalCount || 0,
+            totalArticles: (response.totalCount || 0) + pendingTotalCount,
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching approved articles:", err);
+      } finally {
+        setApprovedLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchApprovedArticles();
+    }
+  }, [session, approvedPageIndex, articlesPageSize, pendingTotalCount]);
+
+  // Fetch pending articles
+  useEffect(() => {
+    const fetchPendingArticles = async () => {
+      if (!session?.accessToken) return;
+      
+      try {
+        setPendingLoading(true);
+        const response = await getArticles(
+          pendingPageIndex,
+          articlesPageSize,
+          undefined,
+          session.accessToken,
+          true // isPending = true for pending
+        );
+
+        if (response) {
+          setPendingArticles(response.data || []);
+          setPendingTotalCount(response.totalCount || 0);
+          
+          // Update stats
+          setSystemStats(prev => ({
+            ...prev,
+            pendingArticles: response.totalCount || 0,
+            totalArticles: approvedTotalCount + (response.totalCount || 0),
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching pending articles:", err);
+      } finally {
+        setPendingLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchPendingArticles();
+    }
+  }, [session, pendingPageIndex, articlesPageSize, approvedTotalCount]);
 
   // دالة لفتح modal الحذف
   const handleDeleteClick = (user: UserWithRoles) => {
@@ -545,7 +624,13 @@ function SuperAdminDashboardContent() {
                 <span className="text-white font-bold text-lg">أ</span>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
-                داشبورد السوبر أدمن
+                {session?.user ? (
+                  <span>
+                    داشبورد - {getRoleInArabic(session.user.role)} {session.user.name}
+                  </span>
+                ) : (
+                  "داشبورد السوبر أدمن"
+                )}
               </h1>
             </div>
             <LogoutButton />
@@ -729,66 +814,152 @@ function SuperAdminDashboardContent() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {articles.length > 0 ? (
-                    articles.map((article) => (
-                      <div
-                        key={article.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
-                            {article.title}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                            <span>✍️ {article.authorName}</span>
-                            <span>
-                              📅{" "}
-                              {new Date(article.publishedAt).toLocaleDateString(
-                                "ar-EG"
-                              )}
-                            </span>
-                            <span>📂 {article.categoryName || "بدون قسم"}</span>
-                            {article.isTrending && (
-                              <span className="text-orange-600">🔥 تريند</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2 space-x-reverse">
-                          <Link
-                            href={`/dashboard/super-admin/article/${article.id}`}
-                          >
-                            <Button variant="outline" size="sm">
-                              مراجعة
-                            </Button>
-                          </Link>
-                          <Link
-                            href={`/dashboard/super-admin/article/${article.id}/edit`}
-                          >
-                            <Button variant="outline" size="sm">
-                              تعديل
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
-                      لا توجد مقالات
-                    </div>
-                  )}
-                </div>
+                <Tabs value={activeArticlesTab} onValueChange={(v) => setActiveArticlesTab(v as "approved" | "pending")} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger 
+                      value="approved" 
+                      className="arabic-text bg-green-100 text-green-800 data-[state=active]:bg-green-600 data-[state=active]:text-white"
+                    >
+                      المقالات الموافق عليها ({approvedTotalCount})
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="pending" 
+                      className="arabic-text bg-yellow-100 text-yellow-800 data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
+                    >
+                      المقالات تحت المراجعة ({pendingTotalCount})
+                    </TabsTrigger>
+                  </TabsList>
 
-                {/* Pagination */}
-                {articlesTotal > articlesPageSize && (
-                  <div className="mt-6 flex justify-center">
-                    <Pagination
-                      currentPage={articlesPageIndex}
-                      totalPages={Math.ceil(articlesTotal / articlesPageSize)}
-                      onPageChange={handleArticlesPageChange}
-                    />
-                  </div>
-                )}
+                  {/* Tab: المقالات الموافق عليها */}
+                  <TabsContent value="approved">
+                    {approvedLoading ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                          جاري التحميل...
+                        </p>
+                      </div>
+                    ) : approvedArticles.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                        لا توجد مقالات موافق عليها
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-4">
+                          {approvedArticles.map((article) => (
+                            <div
+                              key={article.id}
+                              className="flex items-center justify-between p-4 border rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                                  {article.title}
+                                </h3>
+                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                  <span>✍️ {article.authorName}</span>
+                                  <span>
+                                    📅{" "}
+                                    {new Date(article.publishedAt).toLocaleDateString(
+                                      "ar-EG"
+                                    )}
+                                  </span>
+                                  <span>📂 {article.categoryName || "بدون قسم"}</span>
+                                  {article.isTrending && (
+                                    <span className="text-orange-600">🔥 تريند</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 space-x-reverse">
+                                <Link
+                                  href={`/dashboard/super-admin/article/${article.id}?tab=approved`}
+                                >
+                                  <Button variant="outline" size="sm">
+                                    مراجعة
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {approvedTotalCount > articlesPageSize && (
+                          <div className="mt-6 flex justify-center">
+                            <Pagination
+                              currentPage={approvedPageIndex}
+                              totalPages={Math.ceil(approvedTotalCount / articlesPageSize)}
+                              onPageChange={handleApprovedPageChange}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </TabsContent>
+
+                  {/* Tab: المقالات تحت المراجعة */}
+                  <TabsContent value="pending">
+                    {pendingLoading ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 dark:text-gray-400 arabic-text">
+                          جاري التحميل...
+                        </p>
+                      </div>
+                    ) : pendingArticles.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
+                        لا توجد مقالات تحت المراجعة
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-4">
+                          {pendingArticles.map((article) => (
+                            <div
+                              key={article.id}
+                              className="flex items-center justify-between p-4 border rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <h3 className="font-medium text-gray-900 dark:text-white arabic-heading mb-2">
+                                  {article.title}
+                                </h3>
+                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                  <span>✍️ {article.authorName}</span>
+                                  <span>
+                                    📅{" "}
+                                    {new Date(article.publishedAt).toLocaleDateString(
+                                      "ar-EG"
+                                    )}
+                                  </span>
+                                  <span>📂 {article.categoryName || "بدون قسم"}</span>
+                                  {article.isTrending && (
+                                    <span className="text-orange-600">🔥 تريند</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 space-x-reverse">
+                                <Link
+                                  href={`/dashboard/super-admin/article/${article.id}?tab=pending`}
+                                >
+                                  <Button variant="outline" size="sm">
+                                    مراجعة
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {pendingTotalCount > articlesPageSize && (
+                          <div className="mt-6 flex justify-center">
+                            <Pagination
+                              currentPage={pendingPageIndex}
+                              totalPages={Math.ceil(pendingTotalCount / articlesPageSize)}
+                              onPageChange={handlePendingPageChange}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>

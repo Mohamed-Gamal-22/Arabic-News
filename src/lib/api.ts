@@ -115,10 +115,11 @@ export interface Article {
 
 // أنواع الفئات
 export interface Category {
-  id: string;
+  id: string | number;
   name: string;
   slug: string;
   description?: string;
+  parentId?: number | null; // إضافة parentId لدعم السابكاتيجوري
   subcategories?: Subcategory[];
 }
 
@@ -259,12 +260,14 @@ export const getArticles = async (
 ): Promise<ArticlesResponse> => {
   try {
     // التأكد من إرسال pageSize بشكل صحيح
-    const finalPageSize = pageSize || 5; // default 5 إذا لم يتم تحديده
+    // استخدام ?? بدلاً من || لأن 0 هو قيمة صالحة
+    const finalPageSize = pageSize && pageSize > 0 ? pageSize : 10; // default 10 إذا لم يتم تحديده
     let url = `https://newswebsite.runasp.net/api/article?pageIndex=${pageIndex}&pageSize=${finalPageSize}`;
 
     console.log("=== getArticles API Call ===");
     console.log("PageIndex:", pageIndex);
-    console.log("PageSize:", finalPageSize);
+    console.log("PageSize parameter:", pageSize);
+    console.log("FinalPageSize:", finalPageSize);
     console.log("Full URL:", url);
 
     if (isTrending !== undefined) {
