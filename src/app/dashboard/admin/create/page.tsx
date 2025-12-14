@@ -30,11 +30,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle } from "@/lib/api";
+import { createArticle, CurrentUserProfile } from "@/lib/api";
 import {
   getCategoriesWithToken,
   getCurrentUser,
-  CurrentUserProfile,
   ApiCategory,
 } from "@/lib/superAdminApi";
 import { getCurrentUserMe } from "@/lib/api";
