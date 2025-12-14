@@ -120,7 +120,7 @@ export default function AdminDashboard() {
       console.log("No session yet");
       setLoading(false);
     }
-  }, [session, pageIndex, pageSize]);
+  }, [session, pageIndex]);
 
   const handlePageChange = (newPageIndex: number) => {
     setPageIndex(newPageIndex);
@@ -155,13 +155,13 @@ export default function AdminDashboard() {
   //     case "pending":
   //       return "في الانتظار";
   //     case "draft":
-      //       return "مسودة";
-      //     case "rejected":
-      //       return "مرفوض";
-      //     default:
-      //       return "غير معروف";
-      //   }
-      // };
+  //       return "مسودة";
+  //     case "rejected":
+  //       return "مرفوض";
+  //     default:
+  //       return "غير معروف";
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

@@ -173,10 +173,12 @@ export default function TinyMCEEditor({
       }
       tooltipsAddedRef.current = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, placeholder, addTooltips]);
 
   // تحديث المحتوى عند تغيير value من الخارج
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (quillRef.current && value !== quillRef.current.root.innerHTML) {
       quillRef.current.root.innerHTML = value;
     }

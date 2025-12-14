@@ -21,7 +21,9 @@ export default function WriterDashboard() {
   const router = useRouter();
   const { data: session } = useSession();
   const [articles, setArticles] = useState<ApiArticle[]>([]);
-  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageIndex, setPageIndex] = useState(1);
@@ -64,7 +66,12 @@ export default function WriterDashboard() {
         console.log("Fetching articles with token:", token);
 
         // جلب مقالات الكاتب (مع التوكن) - استخدام pageIndex و pageSize
-        const response = await getArticles(pageIndex, pageSize, undefined, token);
+        const response = await getArticles(
+          pageIndex,
+          pageSize,
+          undefined,
+          token
+        );
 
         console.log("Articles response:", response);
 
@@ -82,7 +89,10 @@ export default function WriterDashboard() {
           console.log("PageSize from API:", response.pageSize);
           console.log("Total Count:", response.totalCount);
           console.log("Articles in this page:", response.data?.length || 0);
-          console.log("Total Pages:", Math.ceil(response.totalCount / pageSize));
+          console.log(
+            "Total Pages:",
+            Math.ceil(response.totalCount / pageSize)
+          );
         }
       } catch (err: unknown) {
         setError("حدث خطأ في جلب المقالات");
@@ -95,7 +105,7 @@ export default function WriterDashboard() {
     if (session) {
       fetchArticles();
     }
-  }, [session, pageIndex, pageSize]);
+  }, [session, pageIndex]);
 
   const handlePageChange = (newPageIndex: number) => {
     setPageIndex(newPageIndex);
@@ -121,7 +131,11 @@ export default function WriterDashboard() {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
                 {currentUser ? (
                   <span>
-                    مرحبا {currentUser.displayName || currentUser.fullName || currentUser.userName} (كاتب)
+                    مرحبا{" "}
+                    {currentUser.displayName ||
+                      currentUser.fullName ||
+                      currentUser.userName}{" "}
+                    (كاتب)
                   </span>
                 ) : (
                   "داشبورد الكاتب"
@@ -262,7 +276,9 @@ export default function WriterDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={() =>
-                            router.push(`/dashboard/writer/article/${article.id}`)
+                            router.push(
+                              `/dashboard/writer/article/${article.id}`
+                            )
                           }
                         >
                           عرض التفاصيل

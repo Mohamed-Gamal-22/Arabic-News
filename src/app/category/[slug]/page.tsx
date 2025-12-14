@@ -4,13 +4,13 @@ import { getArticles } from "@/lib/api";
 import { notFound } from "next/navigation";
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
-  const { slug } = params;
+  const { slug } = await params;
 
   const categories = await getCategoriesServer();
   const category = categories.find(

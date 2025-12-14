@@ -44,7 +44,7 @@ export default function EditArticlePage({
   const router = useRouter();
   const { data: session } = useSession();
   const resolvedParams = use(params);
-  const [article, setArticle] = useState<ApiArticle | null>(null);
+  // const [article, setArticle] = useState<ApiArticle | null>(null); // unused - only setArticle is used
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,7 +91,7 @@ export default function EditArticlePage({
         ]);
 
         if (articleData) {
-          setArticle(articleData);
+          // setArticle(articleData); // unused
 
           // فحص إذا كانت المقالة منشورة (IsPending=false يعني منشورة)
           // نفترض أن المقالة منشورة إذا كان لها publishedAt

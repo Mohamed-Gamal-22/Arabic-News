@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 import Image from "next/image";
 import {
   Card,
@@ -63,7 +62,7 @@ export default function ArticleDetails({
             setLoading(false);
             return;
           }
-          
+
           // Debug: طباعة بيانات المقالة
           console.log("=== Writer Article Data ===");
           console.log("Article ID:", articleData.id);
@@ -72,8 +71,11 @@ export default function ArticleDetails({
           console.log("isPending === true:", articleData.isPending === true);
           console.log("isPending === false:", articleData.isPending === false);
           console.log("publishedAt:", articleData.publishedAt);
-          console.log("Full article data:", JSON.stringify(articleData, null, 2));
-          
+          console.log(
+            "Full article data:",
+            JSON.stringify(articleData, null, 2)
+          );
+
           setArticle(articleData);
         } else {
           setError("لم يتم العثور على المقال");
@@ -192,11 +194,11 @@ export default function ArticleDetails({
             {/* Alert معلوماتي فقط - بدون أزرار تعديل */}
             {(() => {
               // قراءة isPending من URL query parameter
-              const isPendingFromUrl = searchParams.get('isPending') === 'true';
-              
+              const isPendingFromUrl = searchParams.get("isPending") === "true";
+
               // استخدام isPending من الـ article أو من الـ URL
               const isPendingArticle = article.isPending ?? isPendingFromUrl;
-              
+
               return isPendingArticle === true;
             })() ? (
               // مقالة تحت المراجعة
@@ -206,7 +208,8 @@ export default function ArticleDetails({
                   ⏳ مقالة تحت المراجعة
                 </AlertTitle>
                 <AlertDescription className="arabic-text text-yellow-700 dark:text-yellow-400 mt-2">
-                  هذه المقالة تحت المراجعة حالياً. سيتم إعلامك عند الموافقة عليها من المسؤول.
+                  هذه المقالة تحت المراجعة حالياً. سيتم إعلامك عند الموافقة
+                  عليها من المسؤول.
                 </AlertDescription>
               </Alert>
             ) : (
