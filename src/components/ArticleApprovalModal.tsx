@@ -52,7 +52,9 @@ export default function ArticleApprovalModal({
       setTrendPeriodInDays(1);
       onOpenChange(false);
     } catch (err: unknown) {
-      setError(err.message || "حدث خطأ في الموافقة على المقال");
+      setError(
+        err instanceof Error ? err.message : "حدث خطأ في الموافقة على المقال"
+      );
     }
   };
 
@@ -149,7 +151,3 @@ export default function ArticleApprovalModal({
     </Dialog>
   );
 }
-
-
-
-

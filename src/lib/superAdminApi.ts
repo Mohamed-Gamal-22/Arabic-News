@@ -23,11 +23,21 @@ export const getUsers = async (token: string) => {
 
 // Types for user operations
 export interface CreateUserData {
-  name: string;
-  email: string;
-  password: string;
+  name?: string;
+  email?: string;
+  Email?: string;
+  DisplayName?: string;
+  UserName?: string;
+  FullName?: string;
+  PhoneNumber?: string;
+  NationalId?: string;
+  password?: string;
+  Password?: string;
   role?: string;
+  Role?: string;
+  Roles?: string[];
   categoryIds?: number[];
+  CategoryIds?: number[];
 }
 
 export interface UpdateUserData {
@@ -44,6 +54,14 @@ export interface CategoryData {
   slug: string;
   description?: string | null;
   parentId?: number | null;
+}
+
+export interface ApiCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  parentId?: number | null | undefined;
 }
 
 // دالة لإنشاء مستخدم جديد
@@ -312,7 +330,9 @@ export const getCurrentUser = async (
       }
     } catch (profileError: unknown) {
       console.error("❌ Profile endpoint error:", profileError);
-      console.error("Error message:", profileError.message);
+      if (profileError instanceof Error) {
+        console.error("Error message:", profileError.message);
+      }
     }
 
     // محاولة 2: فك تشفير JWT token للحصول على بيانات المستخدم

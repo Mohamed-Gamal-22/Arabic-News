@@ -11,6 +11,37 @@ declare module "next-auth" {
     };
     accessToken: string;
   }
+}
+
+declare module "next-auth/react" {
+  export function useSession(): {
+    data: Session | null;
+    status: "loading" | "authenticated" | "unauthenticated";
+  };
+
+  export function signIn(
+    provider?: string,
+    options?: { email?: string; password?: string; redirect?: boolean }
+  ): Promise<{ error?: string; ok?: boolean } | undefined>;
+
+  export function getSession(): Promise<Session | null>;
+
+  export function signOut(options?: {
+    redirect?: boolean;
+    callbackUrl?: string;
+  }): Promise<void>;
+
+  interface Session {
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+      categories?: unknown;
+      categoryIds?: unknown;
+    };
+    accessToken: string;
+  }
 
   interface User {
     id: string;

@@ -36,17 +36,8 @@ import {
   getCategoryById,
   updateCategory,
   getCategoriesWithToken,
+  ApiCategory,
 } from "@/lib/superAdminApi";
-import { Category } from "@/lib/api";
-
-// Type for category from API
-type ApiCategory = {
-  id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  parentId: number | null;
-};
 
 export default function EditCategoryPage({
   params,
@@ -57,7 +48,7 @@ export default function EditCategoryPage({
   const { data: session } = useSession();
   const resolvedParams = use(params);
   const [category, setCategory] = useState<ApiCategory | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +108,9 @@ export default function EditCategoryPage({
         }
       } catch (err: unknown) {
         console.error("Error fetching category:", err);
-        setError(err.message || "حدث خطأ في جلب بيانات التصنيف");
+        setError(
+          err instanceof Error ? err.message : "حدث خطأ في جلب بيانات التصنيف"
+        );
       } finally {
         setLoading(false);
       }
@@ -182,7 +175,9 @@ export default function EditCategoryPage({
     } catch (err: unknown) {
       console.error("Error updating category:", err);
       setErrorMessage(
-        err.message || "حدث خطأ أثناء تحديث التصنيف. يرجى المحاولة مرة أخرى."
+        err instanceof Error
+          ? err.message
+          : "حدث خطأ أثناء تحديث التصنيف. يرجى المحاولة مرة أخرى."
       );
       setShowErrorModal(true);
     } finally {
@@ -237,7 +232,9 @@ export default function EditCategoryPage({
 
   // تصنيفات رئيسية فقط (للاستخدام كـ parent)
   const mainCategories = categories.filter(
-    (cat) => cat.parentId === null && cat.id !== parseInt(resolvedParams.id)
+    (cat) =>
+      (cat.parentId === null || cat.parentId === undefined) &&
+      cat.id !== parseInt(resolvedParams.id)
   );
 
   return (

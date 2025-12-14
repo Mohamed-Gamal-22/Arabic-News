@@ -27,8 +27,9 @@ import {
   getUserById,
   updateUser,
   getCategoriesWithToken,
+  ApiCategory,
 } from "@/lib/superAdminApi";
-import { ApiUser, Category } from "@/lib/api";
+import { ApiUser } from "@/lib/api";
 
 // Schema للتحقق من صحة البيانات - الحقول اختيارية للتعديل الجزئي
 const updateUserSchema = z.object({
@@ -63,7 +64,7 @@ export default function EditUserPage() {
   const [userData, setUserData] = useState<ApiUser | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
@@ -111,7 +112,7 @@ export default function EditUserPage() {
           setSelectedCategoryIds(userData.categoryIds);
           setValue("CategoryIds", userData.categoryIds);
         } else if (
-          userData?.CategoryIds &&
+          userData?.categoryIds &&
           Array.isArray(userData.CategoryIds)
         ) {
           setSelectedCategoryIds(userData.CategoryIds);
@@ -121,7 +122,11 @@ export default function EditUserPage() {
         console.log("تم حفظ البيانات للعرض");
       } catch (error: unknown) {
         console.error("خطأ في جلب بيانات المستخدم:", error);
-        setError(error.message || "لم نتمكن من جلب بيانات المستخدم");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "لم نتمكن من جلب بيانات المستخدم"
+        );
         setShowErrorModal(true);
       } finally {
         setLoadingData(false);
@@ -174,29 +179,20 @@ export default function EditUserPage() {
       // استخدام البيانات الحالية للمستخدم إذا لم يتم ملء حقل
       const updateData = {
         Id: userData.id,
-        fullName: data.fullName || userData.fullName || userData.FullName || "",
-        displayName:
-          data.displayName ||
-          userData.displayName ||
-          userData.DisplayName ||
-          "",
-        userName: data.userName || userData.userName || userData.UserName || "",
+        fullName: data.fullName || userData.fullName || "",
+        displayName: data.displayName || userData.displayName || "",
+        userName: data.userName || userData.userName || "",
         email:
           data.email && data.email.trim() !== ""
             ? data.email
-            : userData.email || userData.Email || "",
-        phoneNumber:
-          data.phoneNumber ||
-          userData.phoneNumber ||
-          userData.PhoneNumber ||
-          "",
-        nationalId:
-          data.nationalId || userData.nationalId || userData.NationalId || "",
+            : userData.email || "",
+        phoneNumber: data.phoneNumber || userData.phoneNumber || "",
+        nationalId: data.nationalId || userData.nationalId || "",
         roles: data.roles || userData.roles || [],
         CategoryIds:
           selectedCategoryIds.length > 0
             ? selectedCategoryIds
-            : userData.categoryIds || userData.CategoryIds || [],
+            : userData.categoryIds || [],
       };
 
       console.log("البيانات المرسلة للتحديث:", updateData);
@@ -218,7 +214,9 @@ export default function EditUserPage() {
       reset();
     } catch (error: unknown) {
       console.error("خطأ في تحديث المستخدم:", error);
-      setError(error.message || "لم نتمكن من تحديث المستخدم");
+      setError(
+        error instanceof Error ? error.message : "لم نتمكن من تحديث المستخدم"
+      );
       setShowErrorModal(true);
     } finally {
       setIsLoading(false);
@@ -307,7 +305,7 @@ export default function EditUserPage() {
                       الاسم الكامل:
                     </span>
                     <p className="text-gray-900">
-                      {userData.fullName || userData.FullName || "غير محدد"}
+                      {userData.fullName || "غير محدد"}
                     </p>
                   </div>
                   <div>
@@ -315,9 +313,7 @@ export default function EditUserPage() {
                       الاسم المعروض:
                     </span>
                     <p className="text-gray-900">
-                      {userData.displayName ||
-                        userData.DisplayName ||
-                        "غير محدد"}
+                      {userData.displayName || "غير محدد"}
                     </p>
                   </div>
                   <div>
@@ -325,7 +321,7 @@ export default function EditUserPage() {
                       اسم المستخدم:
                     </span>
                     <p className="text-gray-900">
-                      {userData.userName || userData.UserName || "غير محدد"}
+                      {userData.userName || "غير محدد"}
                     </p>
                   </div>
                   <div>
@@ -333,7 +329,7 @@ export default function EditUserPage() {
                       البريد الإلكتروني:
                     </span>
                     <p className="text-gray-900">
-                      {userData.email || userData.Email || "غير محدد"}
+                      {userData.email || "غير محدد"}
                     </p>
                   </div>
                   <div>
@@ -341,9 +337,7 @@ export default function EditUserPage() {
                       رقم الهاتف:
                     </span>
                     <p className="text-gray-900">
-                      {userData.phoneNumber ||
-                        userData.PhoneNumber ||
-                        "غير محدد"}
+                      {userData.phoneNumber || "غير محدد"}
                     </p>
                   </div>
                   <div>
@@ -351,7 +345,7 @@ export default function EditUserPage() {
                       الرقم القومي:
                     </span>
                     <p className="text-gray-900">
-                      {userData.nationalId || userData.NationalId || "غير محدد"}
+                      {userData.nationalId || "غير محدد"}
                     </p>
                   </div>
                 </div>
@@ -549,94 +543,87 @@ export default function EditUserPage() {
                   </div>
                 ) : categories.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
-                    {categories.map(
-                      (category: {
-                        id: number;
-                        name: string;
-                        slug: string;
-                        parentId: number | null;
-                      }) => {
-                        const isSelected = selectedCategoryIds.includes(
-                          category.id
-                        );
-                        // تحديد نوع التصنيف (رئيسي أو فرعي)
-                        const isSubCategory = category.parentId !== null;
-                        const parentCategory = isSubCategory
-                          ? categories.find(
-                              (cat: { id: number }) =>
-                                cat.id === category.parentId
-                            )
-                          : null;
+                    {categories.map((category: ApiCategory) => {
+                      const isSelected = selectedCategoryIds.includes(
+                        category.id
+                      );
+                      // تحديد نوع التصنيف (رئيسي أو فرعي)
+                      const isSubCategory = category.parentId !== null;
+                      const parentCategory = isSubCategory
+                        ? categories.find(
+                            (cat: { id: number }) =>
+                              cat.id === category.parentId
+                          )
+                        : null;
 
-                        return (
-                          <button
-                            key={category.id}
-                            type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                const newIds = selectedCategoryIds.filter(
-                                  (id) => id !== category.id
-                                );
-                                setSelectedCategoryIds(newIds);
-                                setValue("CategoryIds", newIds, {
-                                  shouldValidate: true,
-                                });
-                              } else {
-                                const newIds = [
-                                  ...selectedCategoryIds,
-                                  category.id,
-                                ];
-                                setSelectedCategoryIds(newIds);
-                                setValue("CategoryIds", newIds, {
-                                  shouldValidate: true,
-                                });
-                              }
-                            }}
-                            className={`text-right p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
-                              isSelected
-                                ? "bg-blue-50 border-blue-500 shadow-sm"
-                                : "bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50/50"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between space-x-2 space-x-reverse">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-900 arabic-text">
-                                  {isSubCategory && parentCategory && (
-                                    <span className="text-xs text-gray-500 font-normal">
-                                      {parentCategory.name} /{" "}
-                                    </span>
-                                  )}
-                                  {category.name}
-                                </div>
-                                {category.description && (
-                                  <div className="text-xs text-gray-500 mt-1 arabic-text line-clamp-2">
-                                    {category.description}
-                                  </div>
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              const newIds = selectedCategoryIds.filter(
+                                (id) => id !== (category as ApiCategory).id
+                              );
+                              setSelectedCategoryIds(newIds);
+                              setValue("CategoryIds", newIds, {
+                                shouldValidate: true,
+                              });
+                            } else {
+                              const newIds = [
+                                ...selectedCategoryIds,
+                                category.id,
+                              ];
+                              setSelectedCategoryIds(newIds);
+                              setValue("CategoryIds", newIds, {
+                                shouldValidate: true,
+                              });
+                            }
+                          }}
+                          className={`text-right p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                            isSelected
+                              ? "bg-blue-50 border-blue-500 shadow-sm"
+                              : "bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50/50"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between space-x-2 space-x-reverse">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 arabic-text">
+                                {isSubCategory && parentCategory && (
+                                  <span className="text-xs text-gray-500 font-normal">
+                                    {parentCategory.name} /{" "}
+                                  </span>
                                 )}
+                                {category.name}
                               </div>
-                              {isSelected && (
-                                <div className="shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-3 w-3 text-white"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={3}
-                                      d="M5 13l4 4L19 7"
-                                    />
-                                  </svg>
+                              {category.description && (
+                                <div className="text-xs text-gray-500 mt-1 arabic-text line-clamp-2">
+                                  {category.description}
                                 </div>
                               )}
                             </div>
-                          </button>
-                        );
-                      }
-                    )}
+                            {isSelected && (
+                              <div className="shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-3 w-3 text-white"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={3}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 arabic-text border border-gray-300 rounded-lg p-4">

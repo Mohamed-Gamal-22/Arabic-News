@@ -39,7 +39,11 @@ export default function UserDetailsPage() {
         setUserData(userData);
       } catch (error: unknown) {
         console.error("خطأ في جلب بيانات المستخدم:", error);
-        setError(error.message || "لم نتمكن من جلب بيانات المستخدم");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "لم نتمكن من جلب بيانات المستخدم"
+        );
       } finally {
         setLoading(false);
       }

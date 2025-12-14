@@ -33,8 +33,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
-import { getArticleById, updateArticle, Category } from "@/lib/api";
-import { getCategoriesWithToken } from "@/lib/superAdminApi";
+import { getArticleById, updateArticle } from "@/lib/api";
+import { getCategoriesWithToken, ApiCategory } from "@/lib/superAdminApi";
 
 export default function EditArticlePage({
   params,
@@ -45,7 +45,7 @@ export default function EditArticlePage({
   const { data: session } = useSession();
   const resolvedParams = use(params);
   // const [article, setArticle] = useState<ApiArticle | null>(null); // unused - only setArticle is used
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,7 +193,9 @@ export default function EditArticlePage({
       setShowSuccessModal(true);
     } catch (err: unknown) {
       console.error("Error updating article:", err);
-      setErrorMessage(err.message || "حدث خطأ في تعديل المقال");
+      setErrorMessage(
+        err instanceof Error ? err.message : "حدث خطأ في تعديل المقال"
+      );
       setShowErrorModal(true);
     } finally {
       setSaving(false);
@@ -338,16 +340,14 @@ export default function EditArticlePage({
                         <SelectValue placeholder="اختر القسم" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map(
-                          (category: { id: number; name: string }) => (
-                            <SelectItem
-                              key={category.id}
-                              value={category.id.toString()}
-                            >
-                              {category.name}
-                            </SelectItem>
-                          )
-                        )}
+                        {categories.map((category: ApiCategory) => (
+                          <SelectItem
+                            key={category.id}
+                            value={category.id.toString()}
+                          >
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

@@ -25,7 +25,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageIndex, setPageIndex] = useState(1);
-  // const [pageSize, setPageSize] = useState(5); // 5 مقالات في كل صفحة - unused
+  const [pageSize] = useState(5); // 5 مقالات في كل صفحة
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {

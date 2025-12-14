@@ -30,13 +30,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle, Category } from "@/lib/api";
-import { getCategoriesWithToken } from "@/lib/superAdminApi";
+import { createArticle } from "@/lib/api";
+import { getCategoriesWithToken, ApiCategory } from "@/lib/superAdminApi";
 
 export default function SuperAdminCreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -233,7 +233,7 @@ export default function SuperAdminCreateArticlePage() {
         setShowSuccessModal(true);
       }
     } catch (err: unknown) {
-      setError(err.message || "حدث خطأ في إنشاء المقال");
+      setError(err instanceof Error ? err.message : "حدث خطأ في إنشاء المقال");
       console.error("Error creating article:", err);
     } finally {
       setLoading(false);
@@ -349,16 +349,14 @@ export default function SuperAdminCreateArticlePage() {
                     <SelectValue placeholder="اختر القسم" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(
-                      (category: { id: number; name: string }) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      )
-                    )}
+                    {categories.map((category: ApiCategory) => (
+                      <SelectItem
+                        key={category.id}
+                        value={category.id.toString()}
+                      >
+                        {category.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

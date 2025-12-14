@@ -90,10 +90,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
               imageUrl: null,
               roles: [],
               categoryIds:
-                sessionCategoryIds ||
-                sessionCategories?.map((cat: { id: number }) => cat.id) ||
+                (Array.isArray(sessionCategoryIds) ? sessionCategoryIds : []) ||
+                (Array.isArray(sessionCategories)
+                  ? sessionCategories.map((cat: { id: number }) => cat.id)
+                  : []) ||
                 [],
-              categories: sessionCategories || [],
+              categories:
+                (Array.isArray(sessionCategories) ? sessionCategories : []) ||
+                [],
             };
             setUserData(fallbackUserData);
             setError(null);
@@ -122,7 +126,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setError(null);
     } catch (err: unknown) {
       console.error("❌ Error fetching user data:", err);
-      setError(err.message || "حدث خطأ في جلب بيانات المستخدم");
+      setError(
+        err instanceof Error ? err.message : "حدث خطأ في جلب بيانات المستخدم"
+      );
       setUserData(null);
     } finally {
       setLoading(false);

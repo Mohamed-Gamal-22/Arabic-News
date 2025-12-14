@@ -30,8 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { createUser, getCategoriesWithToken } from "@/lib/superAdminApi";
-import { Category } from "@/lib/api";
+import { createUser, getCategoriesWithToken, ApiCategory } from "@/lib/superAdminApi";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 
 // Schema للتحقق من صحة البيانات
@@ -62,7 +61,7 @@ export default function CreateUserPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showAlert, setShowAlert] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
@@ -125,7 +124,7 @@ export default function CreateUserPage() {
       setShowAlert(true);
     } catch (error: unknown) {
       console.error("خطأ في إنشاء المستخدم:", error);
-      setError(error.message || "حدث خطأ في إضافة المستخدم");
+      setError((error instanceof Error ? error.message : "حدث خطأ في إضافة المستخدم"));
       setShowAlert(true);
       // لا يوجد إعادة توجيه في حالة الخطأ
     } finally {
@@ -337,7 +336,7 @@ export default function CreateUserPage() {
                   <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                     {selectedCategoryIds.map((categoryId) => {
                       const category = categories.find(
-                        (cat: { id: number }) => cat.id === categoryId
+                        (cat) => cat.id === categoryId
                       );
                       if (!category) return null;
 
@@ -390,12 +389,7 @@ export default function CreateUserPage() {
                 ) : categories.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
                     {categories.map(
-                      (category: {
-                        id: number;
-                        name: string;
-                        slug: string;
-                        parentId: number | null;
-                      }) => {
+                      (category: ApiCategory) => {
                         const isSelected = selectedCategoryIds.includes(
                           category.id
                         );

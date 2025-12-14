@@ -30,13 +30,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle, getCurrentUserMe } from "@/lib/api";
-import { Category } from "@/lib/api";
+import { createArticle, getCurrentUserMe, ApiUser } from "@/lib/api";
 
 export default function CreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiUser["categories"]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -83,11 +82,11 @@ export default function CreateArticlePage() {
       try {
         // جلب بيانات المستخدم الحالي من /api/authentication/me
         const userData = await getCurrentUserMe(session.accessToken);
-        
+
         console.log("=== Writer User Data ===");
         console.log("User categories:", userData?.categories);
         console.log("User categoryIds:", userData?.categoryIds);
-        
+
         if (userData?.categories && userData.categories.length > 0) {
           // عرض فقط الأقسام المسموح للكاتب بالكتابة فيها
           setCategories(userData.categories);
@@ -315,12 +314,10 @@ export default function CreateArticlePage() {
     } catch (err: unknown) {
       console.error("=== Error Creating Article ===");
       console.error("Full error:", err);
-      console.error("Error message:", err.message);
-      
       // معالجة رسالة الخطأ لعرضها بوضوح
       let displayError = "حدث خطأ في إنشاء المقال";
-      
-      if (err.message) {
+
+      if (err instanceof Error && err.message) {
         // إذا كانت الرسالة تحتوي على تفاصيل validation errors من الـ API
         if (err.message.includes(":")) {
           displayError = err.message; // عرض الرسالة كاملة مع أسماء الحقول
@@ -328,7 +325,7 @@ export default function CreateArticlePage() {
           displayError = err.message;
         }
       }
-      
+
       setErrorMessage(displayError);
       setShowErrorModal(true);
     } finally {
@@ -408,7 +405,9 @@ export default function CreateArticlePage() {
                 <div className="mt-1">
                   <TinyMCEEditor
                     value={formData.content}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                    onChange={(value) =>
+                      setFormData((prev) => ({ ...prev, content: value }))
+                    }
                     placeholder="اكتب محتوى المقالة هنا..."
                   />
                 </div>
@@ -560,8 +559,8 @@ export default function CreateArticlePage() {
                 >
                   إلغاء
                 </LoadingButton>
-                <LoadingButton 
-                  type="submit" 
+                <LoadingButton
+                  type="submit"
                   loading={loading}
                   loadingText="جاري الإنشاء..."
                 >

@@ -41,7 +41,8 @@ export default function SignInPage() {
       } else if (result?.ok) {
         // الحصول على الجلسة لتحديد الدور
         const session = await getSession();
-        const role = session?.user?.role;
+        // Type assertion needed because getSession() doesn't use the extended types
+        const role = (session?.user as { role?: string } | undefined)?.role;
 
         if (role) {
           // توجيه المستخدم حسب دوره

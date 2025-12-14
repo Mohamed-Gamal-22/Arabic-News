@@ -14,10 +14,8 @@ export default function TinyMCEEditor({
   placeholder = "اكتب محتوى المقالة هنا...",
 }: TinyMCEEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const quillRef = useRef<{
-    setContents: (content: string) => void;
-    getContents: () => string;
-  } | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const quillRef = useRef<any>(null);
   const [isMounted, setIsMounted] = useState(false);
   const tooltipsAddedRef = useRef(false);
   const onChangeRef = useRef(onChange);
@@ -120,6 +118,7 @@ export default function TinyMCEEditor({
     const loadQuill = async () => {
       try {
         const Quill = (await import("quill")).default;
+        // @ts-expect-error - CSS import doesn't have type declarations
         await import("quill/dist/quill.snow.css");
 
         // إنشاء محرر Quill

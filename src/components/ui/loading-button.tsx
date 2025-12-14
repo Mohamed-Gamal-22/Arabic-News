@@ -5,9 +5,10 @@ import { Loader2 } from "lucide-react";
 import { Button, ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export interface LoadingButtonProps extends ButtonProps {
+export interface LoadingButtonProps extends Omit<ButtonProps, 'children'> {
   loading?: boolean;
   loadingText?: string;
+  children?: React.ReactNode;
 }
 
 const LoadingButton = React.forwardRef<HTMLButtonElement, LoadingButtonProps>(
