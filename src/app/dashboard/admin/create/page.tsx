@@ -31,11 +31,11 @@ import {
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
 import { createArticle } from "@/lib/api";
-import { Category } from "@/lib/api";
 import {
   getCategoriesWithToken,
   getCurrentUser,
   CurrentUserProfile,
+  ApiCategory,
 } from "@/lib/superAdminApi";
 import { getCurrentUserMe } from "@/lib/api";
 
@@ -43,7 +43,7 @@ export default function AdminCreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [currentUser, setCurrentUser] = useState<CurrentUserProfile | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);

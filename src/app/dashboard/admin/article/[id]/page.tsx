@@ -130,7 +130,7 @@ export default function ReviewArticle({
       setActionSuccess("تم الموافقة على المقال بنجاح");
       setShowSuccessModal(true);
     } catch (err: unknown) {
-      setError(err.message || "حدث خطأ في الموافقة على المقال");
+      setError((err instanceof Error ? err.message : "حدث خطأ في الموافقة على المقال"));
       setShowErrorModal(true);
       console.error("Error approving article:", err);
       throw err; // Re-throw to let modal handle it
@@ -158,7 +158,7 @@ export default function ReviewArticle({
       setActionSuccess("تم رفض وحذف المقال بنجاح");
       setShowSuccessModal(true);
     } catch (err: unknown) {
-      setError(err.message || "حدث خطأ في حذف المقال");
+      setError((err instanceof Error ? err.message : "حدث خطأ في حذف المقال"));
       setShowErrorModal(true);
       console.error("Error deleting article:", err);
     } finally {
