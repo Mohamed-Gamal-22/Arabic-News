@@ -39,6 +39,15 @@ import {
 } from "@/lib/superAdminApi";
 import { Category } from "@/lib/api";
 
+// Type for category from API
+type ApiCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  parentId: number | null;
+};
+
 export default function EditCategoryPage({
   params,
 }: {
@@ -47,7 +56,7 @@ export default function EditCategoryPage({
   const router = useRouter();
   const { data: session } = useSession();
   const resolvedParams = use(params);
-  const [category, setCategory] = useState<any>(null);
+  const [category, setCategory] = useState<ApiCategory | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,7 +156,12 @@ export default function EditCategoryPage({
       }
 
       // إعداد البيانات للإرسال
-      const updateData: { name: string; slug: string; description?: string | null; parentId?: number | null } = {
+      const updateData: {
+        name: string;
+        slug: string;
+        description?: string | null;
+        parentId?: number | null;
+      } = {
         name: formData.name.trim(),
         slug: formData.slug.trim(),
         description: formData.description.trim() || null,
@@ -161,7 +175,7 @@ export default function EditCategoryPage({
       }
 
       // تحديث التصنيف
-      const result = await updateCategory(token, categoryId, updateData);
+      await updateCategory(token, categoryId, updateData);
 
       setSuccessMessage("تم تحديث التصنيف بنجاح");
       setShowSuccessModal(true);
@@ -207,7 +221,9 @@ export default function EditCategoryPage({
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>خطأ</AlertTitle>
-                <AlertDescription className="arabic-text">{error}</AlertDescription>
+                <AlertDescription className="arabic-text">
+                  {error}
+                </AlertDescription>
               </Alert>
               <div className="mt-4">
                 <BackToDashboardButton />

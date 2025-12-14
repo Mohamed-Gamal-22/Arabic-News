@@ -162,7 +162,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
+  // const [totalCount, setTotalCount] = useState(0); // unused
 
   useEffect(() => {
     const fetchArticles = async () => {

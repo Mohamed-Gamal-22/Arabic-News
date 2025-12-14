@@ -19,16 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// import { Input } from "@/components/ui/input"; // unused
+// import { Label } from "@/components/ui/label"; // unused
+// import { Textarea } from "@/components/ui/textarea"; // unused
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select"; // unused
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pagination } from "@/components/ui/pagination";
 import LogoutButton from "@/components/LogoutButton";
@@ -42,8 +42,8 @@ import {
 } from "@/lib/superAdminApi";
 import {
   getArticles,
-  getArticleById,
-  updateArticle,
+  // getArticleById, // unused
+  // updateArticle, // unused
   ApiArticle,
   ApiUser,
 } from "@/lib/api";
@@ -69,7 +69,7 @@ export default function SuperAdminDashboard() {
   const [categories, setCategories] = useState([]);
   const [articles, setArticles] = useState<ApiArticle[]>([]);
   const [articlesPageIndex, setArticlesPageIndex] = useState(1);
-  const [articlesPageSize, setArticlesPageSize] = useState(5);
+  // const [articlesPageSize, setArticlesPageSize] = useState(5); // unused
   const [articlesTotal, setArticlesTotal] = useState(0);
   const [activeTab, setActiveTab] = useState<string>("articles");
   const [systemStats, setSystemStats] = useState({
@@ -86,17 +86,17 @@ export default function SuperAdminDashboard() {
   const [error, setError] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [userToDelete, setUserToDelete] = useState<UserWithRoles | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleteCancelMessage, setDeleteCancelMessage] = useState("");
   const [showDeleteResultAlert, setShowDeleteResultAlert] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [userToUpdateRole, setUserToUpdateRole] = useState<any>(null);
+  const [userToUpdateRole, setUserToUpdateRole] = useState<UserWithRoles | null>(null);
   const [selectedRole, setSelectedRole] = useState("");
   const [roleUpdateLoading, setRoleUpdateLoading] = useState(false);
-  const [roleUpdateSuccess, setRoleUpdateSuccess] = useState("");
-  const [roleUpdateError, setRoleUpdateError] = useState("");
+  // const [roleUpdateSuccess, setRoleUpdateSuccess] = useState(""); // unused
+  // const [roleUpdateError, setRoleUpdateError] = useState(""); // unused
   const [showRoleResultModal, setShowRoleResultModal] = useState(false);
   const [roleResultMessage, setRoleResultMessage] = useState("");
   const [roleResultType, setRoleResultType] = useState<"success" | "error">(
@@ -120,7 +120,7 @@ export default function SuperAdminDashboard() {
 
   // State للـ Modal حذف كاتيجوري
   const [showDeleteCategoryModal, setShowDeleteCategoryModal] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<any>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<ApiCategory | null>(null);
   const [deleteCategoryLoading, setDeleteCategoryLoading] = useState(false);
   const [showDeleteResultModal, setShowDeleteResultModal] = useState(false);
   const [deleteResultMessage, setDeleteResultMessage] = useState("");
@@ -207,6 +207,7 @@ export default function SuperAdminDashboard() {
     };
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, articlesPageIndex, articlesPageSize]);
 
   // دالة لتغيير صفحة المقالات
@@ -1396,7 +1397,7 @@ export default function SuperAdminDashboard() {
               <span>تأكيد الحذف</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
-              هل أنت متأكد من حذف الكاتيجوري "{categoryToDelete?.name}"؟
+              هل أنت متأكد من حذف الكاتيجوري &quot;{categoryToDelete?.name}&quot;؟
               <br />
               {(() => {
                 const subcategories = categories.filter(

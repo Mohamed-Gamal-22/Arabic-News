@@ -75,19 +75,13 @@ export default function LoginForm() {
               <Label htmlFor="email" className="arabic-text">
                 البريد الإلكتروني
               </Label>
-              <div className="relative">
-                <FontAwesomeIcon
-                  icon={faUser}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="أدخل بريدك الإلكتروني"
-                  className="pr-10 arabic-text"
-                  {...register("email")}
-                />
-              </div>
+              <Input
+                id="email"
+                type="email"
+                placeholder="أدخل بريدك الإلكتروني"
+                className="arabic-text"
+                {...register("email")}
+              />
               {errors.email && (
                 <p className="text-sm text-red-600 arabic-text">
                   {errors.email.message}
@@ -100,15 +94,11 @@ export default function LoginForm() {
                 كلمة المرور
               </Label>
               <div className="relative">
-                <FontAwesomeIcon
-                  icon={faLock}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="أدخل كلمة المرور"
-                  className="pr-10 pl-10 arabic-text"
+                  className="pr-10 arabic-text"
                   {...register("password")}
                 />
                 <button
@@ -116,7 +106,7 @@ export default function LoginForm() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                  {showPassword ? "👁️" : "👁️‍🗨️"}
                 </button>
               </div>
               {errors.password && (
@@ -127,17 +117,7 @@ export default function LoginForm() {
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <FontAwesomeIcon
-                    icon={faSpinner}
-                    className="animate-spin mr-2"
-                  />
-                  جاري تسجيل الدخول...
-                </>
-              ) : (
-                "تسجيل الدخول"
-              )}
+              {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
             </Button>
           </form>
         </CardContent>

@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Card,
@@ -16,7 +17,7 @@ import BackToDashboardButton from "@/components/BackToDashboardButton";
 import ArticleApprovalModal from "@/components/ArticleApprovalModal";
 import { getArticleById } from "@/lib/api";
 import { approveArticleUnpend, deleteArticle } from "@/lib/articles";
-import { ApiArticle } from "@/lib/api";
+import { ApiArticle, Category } from "@/lib/api";
 import { getCategoriesWithToken } from "@/lib/superAdminApi";
 import Link from "next/link";
 import { AlertModal } from "@/components/ui/alert-modal";
@@ -31,7 +32,7 @@ export default function ReviewArticle({
   const searchParams = useSearchParams();
   const resolvedParams = use(params);
   const [article, setArticle] = useState<ApiArticle | null>(null);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -257,11 +258,15 @@ export default function ReviewArticle({
                 </CardDescription>
               </CardHeader>
               {article.imageUrl && (
-                <img
-                  src={article.imageUrl}
-                  alt={article.title}
-                  className="w-full h-auto mb-4 rounded-lg"
-                />
+                <div className="relative w-full h-64 mb-4 rounded-lg overflow-hidden">
+                  <Image
+                    src={article.imageUrl}
+                    alt={article.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                </div>
               )}
               <CardContent>
                 <div className="space-y-4">

@@ -28,6 +28,7 @@ import {
   updateUser,
   getCategoriesWithToken,
 } from "@/lib/superAdminApi";
+import { ApiUser, Category } from "@/lib/api";
 
 // Schema للتحقق من صحة البيانات - الحقول اختيارية للتعديل الجزئي
 const updateUserSchema = z.object({
@@ -59,10 +60,10 @@ export default function EditUserPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<ApiUser | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
@@ -129,6 +130,7 @@ export default function EditUserPage() {
     };
 
     fetchUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, userId, reset]);
 
   const onSubmit = async (data: UpdateUserFormData) => {
@@ -547,86 +549,94 @@ export default function EditUserPage() {
                   </div>
                 ) : categories.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
-                    {categories.map((category: { id: number; name: string; slug: string; parentId: number | null }) => {
-                      const isSelected = selectedCategoryIds.includes(
-                        category.id
-                      );
-                      // تحديد نوع التصنيف (رئيسي أو فرعي)
-                      const isSubCategory = category.parentId !== null;
-                      const parentCategory = isSubCategory
-                        ? categories.find(
-                            (cat: { id: number }) => cat.id === category.parentId
-                          )
-                        : null;
+                    {categories.map(
+                      (category: {
+                        id: number;
+                        name: string;
+                        slug: string;
+                        parentId: number | null;
+                      }) => {
+                        const isSelected = selectedCategoryIds.includes(
+                          category.id
+                        );
+                        // تحديد نوع التصنيف (رئيسي أو فرعي)
+                        const isSubCategory = category.parentId !== null;
+                        const parentCategory = isSubCategory
+                          ? categories.find(
+                              (cat: { id: number }) =>
+                                cat.id === category.parentId
+                            )
+                          : null;
 
-                      return (
-                        <button
-                          key={category.id}
-                          type="button"
-                          onClick={() => {
-                            if (isSelected) {
-                              const newIds = selectedCategoryIds.filter(
-                                (id) => id !== category.id
-                              );
-                              setSelectedCategoryIds(newIds);
-                              setValue("CategoryIds", newIds, {
-                                shouldValidate: true,
-                              });
-                            } else {
-                              const newIds = [
-                                ...selectedCategoryIds,
-                                category.id,
-                              ];
-                              setSelectedCategoryIds(newIds);
-                              setValue("CategoryIds", newIds, {
-                                shouldValidate: true,
-                              });
-                            }
-                          }}
-                          className={`text-right p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
-                            isSelected
-                              ? "bg-blue-50 border-blue-500 shadow-sm"
-                              : "bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50/50"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between space-x-2 space-x-reverse">
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900 arabic-text">
-                                {isSubCategory && parentCategory && (
-                                  <span className="text-xs text-gray-500 font-normal">
-                                    {parentCategory.name} /{" "}
-                                  </span>
+                        return (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                const newIds = selectedCategoryIds.filter(
+                                  (id) => id !== category.id
+                                );
+                                setSelectedCategoryIds(newIds);
+                                setValue("CategoryIds", newIds, {
+                                  shouldValidate: true,
+                                });
+                              } else {
+                                const newIds = [
+                                  ...selectedCategoryIds,
+                                  category.id,
+                                ];
+                                setSelectedCategoryIds(newIds);
+                                setValue("CategoryIds", newIds, {
+                                  shouldValidate: true,
+                                });
+                              }
+                            }}
+                            className={`text-right p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                              isSelected
+                                ? "bg-blue-50 border-blue-500 shadow-sm"
+                                : "bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50/50"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between space-x-2 space-x-reverse">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900 arabic-text">
+                                  {isSubCategory && parentCategory && (
+                                    <span className="text-xs text-gray-500 font-normal">
+                                      {parentCategory.name} /{" "}
+                                    </span>
+                                  )}
+                                  {category.name}
+                                </div>
+                                {category.description && (
+                                  <div className="text-xs text-gray-500 mt-1 arabic-text line-clamp-2">
+                                    {category.description}
+                                  </div>
                                 )}
-                                {category.name}
                               </div>
-                              {category.description && (
-                                <div className="text-xs text-gray-500 mt-1 arabic-text line-clamp-2">
-                                  {category.description}
+                              {isSelected && (
+                                <div className="shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3 w-3 text-white"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={3}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
                                 </div>
                               )}
                             </div>
-                            {isSelected && (
-                              <div className="shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-3 w-3 text-white"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={3}
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      }
+                    )}
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 arabic-text border border-gray-300 rounded-lg p-4">

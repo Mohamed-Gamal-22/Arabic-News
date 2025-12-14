@@ -297,11 +297,11 @@ export const getCurrentUser = async (
             try {
               const errorData = JSON.parse(errorText);
               console.log("Profile endpoint error JSON:", errorData);
-            } catch (e: unknown) {
+            } catch {
               // ليس JSON
             }
           }
-        } catch (e: unknown) {
+        } catch {
           console.log("Could not read error response");
         }
       }
@@ -448,7 +448,9 @@ export const getCurrentUser = async (
           console.log("✅ Fetched all users, searching for current user");
 
           if (Array.isArray(users)) {
-            const currentUser = users.find((u: { email: string }) => u.email === email);
+            const currentUser = users.find(
+              (u: { email: string }) => u.email === email
+            );
             if (currentUser) {
               console.log("✅ Found current user in users list:", currentUser);
 
@@ -497,7 +499,7 @@ export const getCurrentUser = async (
       "All endpoints returned 403 or failed. User may not have permission to access user data."
     );
     return null;
-    } catch (error: unknown) {
+  } catch (error: unknown) {
     console.error("❌ خطأ في جلب بيانات المستخدم الحالي:", error);
     return null;
   }
@@ -602,7 +604,7 @@ export const updateCategory = async (
       try {
         const data = await response.json();
         return data;
-      } catch (jsonError: unknown) {
+      } catch {
         console.log("Response is not valid JSON, treating as success");
         return { success: true, message: "تم التحديث بنجاح" };
       }
@@ -649,7 +651,7 @@ export const deleteCategory = async (token: string, categoryId: number) => {
       try {
         const data = await response.json();
         return data;
-      } catch (jsonError: unknown) {
+      } catch {
         console.log("Response is not valid JSON, treating as success");
         return { success: true, message: "تم الحذف بنجاح" };
       }
@@ -664,7 +666,10 @@ export const deleteCategory = async (token: string, categoryId: number) => {
 };
 
 // دالة لإنشاء كاتيجوري جديد
-export const createCategory = async (token: string, categoryData: CategoryData) => {
+export const createCategory = async (
+  token: string,
+  categoryData: CategoryData
+) => {
   try {
     console.log("Sending category data:", categoryData);
 

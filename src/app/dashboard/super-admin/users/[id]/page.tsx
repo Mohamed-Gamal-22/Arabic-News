@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getUserById } from "@/lib/superAdminApi";
+import { ApiUser } from "@/lib/api";
 
 export default function UserDetailsPage() {
   const { data: session } = useSession();
@@ -19,7 +20,7 @@ export default function UserDetailsPage() {
   const params = useParams();
   const userId = params.id as string;
 
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -307,14 +308,20 @@ export default function UserDetailsPage() {
                     التصنيفات المرتبطة
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {userData.categories.map((category: { id: number; name: string; slug: string }) => (
-                      <span
-                        key={category.id}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm arabic-text"
-                      >
-                        {category.name}
-                      </span>
-                    ))}
+                    {userData.categories.map(
+                      (category: {
+                        id: number;
+                        name: string;
+                        slug: string;
+                      }) => (
+                        <span
+                          key={category.id}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm arabic-text"
+                        >
+                          {category.name}
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -344,6 +351,3 @@ export default function UserDetailsPage() {
     </div>
   );
 }
-
-
-

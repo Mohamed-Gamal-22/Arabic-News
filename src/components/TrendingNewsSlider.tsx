@@ -9,7 +9,7 @@ import Image from "next/image";
 //   faClock,
 //   faCalendar,
 // } from "@fortawesome/free-solid-svg-icons";
-import { Card, CardContent } from "@/components/ui/card";
+// import { Card, CardContent } from "@/components/ui/card"; // unused
 
 interface TrendingNewsSliderProps {
   articles: Array<{

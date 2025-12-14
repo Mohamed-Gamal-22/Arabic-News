@@ -14,7 +14,10 @@ export default function TinyMCEEditor({
   placeholder = "اكتب محتوى المقالة هنا...",
 }: TinyMCEEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const quillRef = useRef<any>(null);
+  const quillRef = useRef<{
+    setContents: (content: string) => void;
+    getContents: () => string;
+  } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const tooltipsAddedRef = useRef(false);
   const onChangeRef = useRef(onChange);
@@ -31,7 +34,7 @@ export default function TinyMCEEditor({
   // دالة لإضافة tooltips - مرة واحدة فقط
   const addTooltips = useCallback(() => {
     if (tooltipsAddedRef.current) return;
-    
+
     const toolbar = editorRef.current?.querySelector(".ql-toolbar");
     if (!toolbar) return;
 
@@ -49,9 +52,9 @@ export default function TinyMCEEditor({
     buttons.forEach((button) => {
       const buttonElement = button as HTMLElement;
       const classList = Array.from(buttonElement.classList);
-      
+
       let tooltipText = "";
-      
+
       // للقوائم
       if (classList.includes("ql-list")) {
         const value = buttonElement.getAttribute("value");
@@ -82,16 +85,28 @@ export default function TinyMCEEditor({
     pickers.forEach((picker) => {
       const pickerElement = picker as HTMLElement;
       const pickerLabel = pickerElement.querySelector(".ql-picker-label");
-      
+
       if (pickerLabel) {
         const labelElement = pickerLabel as HTMLElement;
         const classList = Array.from(pickerElement.classList);
-        
-        if (classList.includes("ql-header") && !labelElement.getAttribute("title")) {
-          labelElement.setAttribute("title", "العناوين - اختر حجم العنوان (عادي, H1, H2, H3)");
-        } else if (classList.includes("ql-color") && !labelElement.getAttribute("title")) {
+
+        if (
+          classList.includes("ql-header") &&
+          !labelElement.getAttribute("title")
+        ) {
+          labelElement.setAttribute(
+            "title",
+            "العناوين - اختر حجم العنوان (عادي, H1, H2, H3)"
+          );
+        } else if (
+          classList.includes("ql-color") &&
+          !labelElement.getAttribute("title")
+        ) {
           labelElement.setAttribute("title", "لون النص - اختر لون النص");
-        } else if (classList.includes("ql-background") && !labelElement.getAttribute("title")) {
+        } else if (
+          classList.includes("ql-background") &&
+          !labelElement.getAttribute("title")
+        ) {
           labelElement.setAttribute("title", "لون الخلفية - اختر لون الخلفية");
         }
       }

@@ -131,7 +131,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account, trigger, session: updateSession }) {
+    async jwt({ token, user }) {
       // عند تسجيل الدخول الأول
       if (user) {
         console.log("=== JWT Callback - First Login ===");

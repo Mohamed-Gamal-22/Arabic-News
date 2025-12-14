@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { useSession } from "next-auth/react";
 import { ApiUser } from "@/lib/api";
 
@@ -34,7 +40,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!userId) {
         console.error("❌ User ID not found in session");
         console.error("Session user object:", session.user);
-        setError("لا يمكن الوصول إلى بيانات المستخدم. يرجى تسجيل الدخول مرة أخرى.");
+        setError(
+          "لا يمكن الوصول إلى بيانات المستخدم. يرجى تسجيل الدخول مرة أخرى."
+        );
         setLoading(false);
         return;
       }
@@ -47,29 +55,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // استخدام /api/users/{userId} endpoint مباشرة مع userId من session
       const userApiUrl = `https://newswebsite.runasp.net/api/users/${userId}`;
       console.log("Full API URL:", userApiUrl);
-      
-      const response = await fetch(
-        userApiUrl,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+
+      const response = await fetch(userApiUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       console.log("Users/{id} endpoint response status:", response.status);
       console.log("Users/{id} endpoint response ok:", response.ok);
 
       if (!response.ok) {
         if (response.status === 403) {
-          console.warn("⚠️ Endpoint returned 403 - user may not have permission");
-          
+          console.warn(
+            "⚠️ Endpoint returned 403 - user may not have permission"
+          );
+
           // محاولة استخدام categories من session إذا كانت موجودة
           const sessionCategories = session.user?.categories;
           const sessionCategoryIds = session.user?.categoryIds;
-          
+
           if (sessionCategories || sessionCategoryIds) {
             console.log("✅ Using categories from session as fallback");
             const fallbackUserData: ApiUser = {
@@ -82,7 +89,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
               fullName: session.user.name || "",
               imageUrl: null,
               roles: [],
-              categoryIds: sessionCategoryIds || (sessionCategories?.map((cat: { id: number }) => cat.id) || []),
+              categoryIds:
+                sessionCategoryIds ||
+                sessionCategories?.map((cat: { id: number }) => cat.id) ||
+                [],
               categories: sessionCategories || [],
             };
             setUserData(fallbackUserData);
@@ -90,11 +100,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
             setLoading(false);
             return;
           }
-          
+
           // إذا لم توجد categories في session أيضاً، نرجع null بدون error
           console.warn("⚠️ No categories found in session either");
           setUserData(null);
-          setError("ليس لديك صلاحية للوصول إلى بيانات المستخدم أو لم يتم تعيين تصنيفات لك");
+          setError(
+            "ليس لديك صلاحية للوصول إلى بيانات المستخدم أو لم يتم تعيين تصنيفات لك"
+          );
           setLoading(false);
           return;
         }
@@ -124,6 +136,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUserData(null);
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken, session?.user?.id]);
 
   return (
@@ -147,4 +160,3 @@ export function useUser() {
   }
   return context;
 }
-

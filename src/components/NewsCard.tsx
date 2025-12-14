@@ -11,7 +11,7 @@ interface NewsCardProps {
 }
 
 export default function NewsCard({
-  id,
+  // id, // unused
   title,
   summary,
   imageUrl,

@@ -33,9 +33,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
-import { getArticleById, updateArticle } from "@/lib/api";
+import { getArticleById, updateArticle, ApiArticle, Category } from "@/lib/api";
 import { getCategoriesWithToken } from "@/lib/superAdminApi";
-import { Category } from "@/lib/api";
 
 export default function EditArticlePage({
   params,
@@ -45,7 +44,7 @@ export default function EditArticlePage({
   const router = useRouter();
   const { data: session } = useSession();
   const resolvedParams = use(params);
-  const [article, setArticle] = useState<any>(null);
+  const [article, setArticle] = useState<ApiArticle | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,7 +92,7 @@ export default function EditArticlePage({
 
         if (articleData) {
           setArticle(articleData);
-          
+
           // فحص إذا كانت المقالة منشورة (IsPending=false يعني منشورة)
           // نفترض أن المقالة منشورة إذا كان لها publishedAt
           setWasPublished(!!articleData.publishedAt);
@@ -255,128 +254,132 @@ export default function EditArticlePage({
                   ⚠️ تحذير: مقالة منشورة
                 </AlertTitle>
                 <AlertDescription className="arabic-text text-yellow-700 dark:text-yellow-400 mt-2">
-                  هذه المقالة منشورة حالياً. أي تعديل سيتم عليها سيرجعها تلقائياً إلى
-                  حالة المراجعة وتحتاج موافقة جديدة للنشر.
+                  هذه المقالة منشورة حالياً. أي تعديل سيتم عليها سيرجعها
+                  تلقائياً إلى حالة المراجعة وتحتاج موافقة جديدة للنشر.
                 </AlertDescription>
               </Alert>
             )}
 
             <Card>
-            <CardHeader>
-              <CardTitle className="arabic-heading text-2xl">
-                تعديل المقال
-              </CardTitle>
-              <CardDescription className="arabic-text">
-                قم بتعديل بيانات المقال
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <Label htmlFor="Title" className="arabic-text">
-                    العنوان *
-                  </Label>
-                  <Input
-                    id="Title"
-                    name="Title"
-                    value={formData.Title}
-                    onChange={handleInputChange}
-                    className="mt-1 arabic-text"
-                    placeholder="عنوان المقال"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="Summary" className="arabic-text">
-                    الملخص *
-                  </Label>
-                  <Textarea
-                    id="Summary"
-                    name="Summary"
-                    value={formData.Summary}
-                    onChange={handleInputChange}
-                    className="mt-1 arabic-text"
-                    rows={3}
-                    placeholder="ملخص المقال"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="Content" className="arabic-text">
-                    المحتوى *
-                  </Label>
-                  <div className="mt-1">
-                    <TinyMCEEditor
-                      value={formData.Content}
-                      onChange={(value) => setFormData((prev) => ({ ...prev, Content: value }))}
-                      placeholder="اكتب محتوى المقالة هنا..."
+              <CardHeader>
+                <CardTitle className="arabic-heading text-2xl">
+                  تعديل المقال
+                </CardTitle>
+                <CardDescription className="arabic-text">
+                  قم بتعديل بيانات المقال
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="Title" className="arabic-text">
+                      العنوان *
+                    </Label>
+                    <Input
+                      id="Title"
+                      name="Title"
+                      value={formData.Title}
+                      onChange={handleInputChange}
+                      className="mt-1 arabic-text"
+                      placeholder="عنوان المقال"
+                      required
                     />
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="Slug" className="arabic-text">
-                    الرابط (Slug) *
-                  </Label>
-                  <Input
-                    id="Slug"
-                    name="Slug"
-                    value={formData.Slug}
-                    onChange={handleInputChange}
-                    className="mt-1"
-                    placeholder="article-slug"
-                    required
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="Summary" className="arabic-text">
+                      الملخص *
+                    </Label>
+                    <Textarea
+                      id="Summary"
+                      name="Summary"
+                      value={formData.Summary}
+                      onChange={handleInputChange}
+                      className="mt-1 arabic-text"
+                      rows={3}
+                      placeholder="ملخص المقال"
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="CategoryId" className="arabic-text">
-                    القسم *
-                  </Label>
-                  <Select
-                    value={formData.CategoryId}
-                    onValueChange={handleSelectChange}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="اختر القسم" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category: { id: number; name: string }) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div>
+                    <Label htmlFor="Content" className="arabic-text">
+                      المحتوى *
+                    </Label>
+                    <div className="mt-1">
+                      <TinyMCEEditor
+                        value={formData.Content}
+                        onChange={(value) =>
+                          setFormData((prev) => ({ ...prev, Content: value }))
+                        }
+                        placeholder="اكتب محتوى المقالة هنا..."
+                      />
+                    </div>
+                  </div>
 
-                <div className="flex justify-end gap-3 space-x-reverse">
-                  <LoadingButton
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      router.push("/dashboard/super-admin?tab=articles")
-                    }
-                    disabled={saving}
-                  >
-                    إلغاء
-                  </LoadingButton>
-                  <LoadingButton 
-                    type="submit" 
-                    loading={saving}
-                    loadingText="جاري الحفظ..."
-                  >
-                    حفظ التعديلات
-                  </LoadingButton>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                  <div>
+                    <Label htmlFor="Slug" className="arabic-text">
+                      الرابط (Slug) *
+                    </Label>
+                    <Input
+                      id="Slug"
+                      name="Slug"
+                      value={formData.Slug}
+                      onChange={handleInputChange}
+                      className="mt-1"
+                      placeholder="article-slug"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="CategoryId" className="arabic-text">
+                      القسم *
+                    </Label>
+                    <Select
+                      value={formData.CategoryId}
+                      onValueChange={handleSelectChange}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="اختر القسم" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(
+                          (category: { id: number; name: string }) => (
+                            <SelectItem
+                              key={category.id}
+                              value={category.id.toString()}
+                            >
+                              {category.name}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex justify-end gap-3 space-x-reverse">
+                    <LoadingButton
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        router.push("/dashboard/super-admin?tab=articles")
+                      }
+                      disabled={saving}
+                    >
+                      إلغاء
+                    </LoadingButton>
+                    <LoadingButton
+                      type="submit"
+                      loading={saving}
+                      loadingText="جاري الحفظ..."
+                    >
+                      حفظ التعديلات
+                    </LoadingButton>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </>
         )}
 
@@ -407,7 +410,9 @@ export default function EditArticlePage({
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end mt-4">
-              <LoadingButton onClick={() => setShowErrorModal(false)}>حسناً</LoadingButton>
+              <LoadingButton onClick={() => setShowErrorModal(false)}>
+                حسناً
+              </LoadingButton>
             </div>
           </DialogContent>
         </Dialog>

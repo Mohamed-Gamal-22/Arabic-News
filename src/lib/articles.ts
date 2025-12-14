@@ -93,7 +93,8 @@ export const approveArticleUnpend = async (
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.title || errorMessage;
-      } catch (e: unknown) {
+      } catch {
+        // Ignore JSON parse errors, use default errorMessage
         // إذا لم يكن هناك JSON في الرد
         const text = await response.text();
         if (text) errorMessage = text;

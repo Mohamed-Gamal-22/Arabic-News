@@ -25,7 +25,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageIndex, setPageIndex] = useState(1);
-  const [pageSize, setPageSize] = useState(5); // 5 مقالات في كل صفحة
+  // const [pageSize, setPageSize] = useState(5); // 5 مقالات في كل صفحة - unused
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
@@ -133,35 +133,35 @@ export default function AdminDashboard() {
   const pendingArticles = 0; // سيتم تحديثه حسب API
   const totalWriters = new Set(articles.map((a) => a.authorId)).size;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "published":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "published":
+  //       return "bg-green-100 text-green-800";
+  //     case "pending":
+  //       return "bg-yellow-100 text-yellow-800";
+  //     case "draft":
+  //       return "bg-gray-100 text-gray-800";
+  //     case "rejected":
+  //       return "bg-red-100 text-red-800";
+  //     default:
+  //       return "bg-gray-100 text-gray-800";
+  //   }
+  // };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "published":
-        return "منشور";
-      case "pending":
-        return "في الانتظار";
-      case "draft":
-        return "مسودة";
-      case "rejected":
-        return "مرفوض";
-      default:
-        return "غير معروف";
-    }
-  };
+  // const getStatusText = (status: string) => {
+  //   switch (status) {
+  //     case "published":
+  //       return "منشور";
+  //     case "pending":
+  //       return "في الانتظار";
+  //     case "draft":
+      //       return "مسودة";
+      //     case "rejected":
+      //       return "مرفوض";
+      //     default:
+      //       return "غير معروف";
+      //   }
+      // };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

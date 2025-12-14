@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -13,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { LoadingButton } from "@/components/ui/loading-button";
+// import { LoadingButton } from "@/components/ui/loading-button"; // unused
 import LogoutButton from "@/components/LogoutButton";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import { getArticleById } from "@/lib/api";
@@ -24,7 +25,7 @@ export default function ArticleDetails({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const router = useRouter();
+  // const router = useRouter(); // unused
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const resolvedParams = use(params);
@@ -145,11 +146,15 @@ export default function ArticleDetails({
                 </CardDescription>
               </CardHeader>
               {article.imageUrl && (
-                <img
-                  src={article.imageUrl}
-                  alt={article.title}
-                  className="w-full h-auto mb-4 rounded-lg"
-                />
+                <div className="relative w-full h-64 mb-4 rounded-lg overflow-hidden">
+                  <Image
+                    src={article.imageUrl}
+                    alt={article.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                </div>
               )}
               <CardContent>
                 <div className="space-y-4">

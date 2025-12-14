@@ -30,13 +30,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle } from "@/lib/api";
+import { createArticle, Category } from "@/lib/api";
 import { getCategoriesWithToken } from "@/lib/superAdminApi";
 
 export default function SuperAdminCreateArticlePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -198,8 +198,10 @@ export default function SuperAdminCreateArticlePage() {
       const formDataToSend = new FormData();
 
       // استخدام الأسماء الصحيحة حسب API .NET - CategoryId يجب أن يكون رقم (number)
-      const categoryId = formData.categoryId ? Number(formData.categoryId) : null;
-      
+      const categoryId = formData.categoryId
+        ? Number(formData.categoryId)
+        : null;
+
       if (!categoryId || isNaN(categoryId)) {
         setErrorMessage("يجب اختيار قسم للمقال");
         setShowErrorModal(true);
@@ -212,7 +214,7 @@ export default function SuperAdminCreateArticlePage() {
       formDataToSend.append("Summary", formData.summary || "");
       formDataToSend.append("Slug", formData.slug);
       formDataToSend.append("CategoryId", categoryId.toString());
-      
+
       console.log("CategoryId to send (as number):", categoryId);
 
       if (imageFile) {
@@ -310,7 +312,9 @@ export default function SuperAdminCreateArticlePage() {
                 <div className="mt-1">
                   <TinyMCEEditor
                     value={formData.content}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                    onChange={(value) =>
+                      setFormData((prev) => ({ ...prev, content: value }))
+                    }
                     placeholder="اكتب محتوى المقالة هنا..."
                   />
                 </div>
@@ -345,14 +349,16 @@ export default function SuperAdminCreateArticlePage() {
                     <SelectValue placeholder="اختر القسم" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category: { id: number; name: string }) => (
-                      <SelectItem
-                        key={category.id}
-                        value={category.id.toString()}
-                      >
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    {categories.map(
+                      (category: { id: number; name: string }) => (
+                        <SelectItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
               </div>

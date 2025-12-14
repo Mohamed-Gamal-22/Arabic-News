@@ -11,7 +11,7 @@ interface FeaturedNewsCardProps {
 }
 
 export default function FeaturedNewsCard({
-  id,
+  // id, // unused
   title,
   summary,
   imageUrl,

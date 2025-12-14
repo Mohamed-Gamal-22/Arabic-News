@@ -521,7 +521,7 @@ export const updateArticle = async (
       try {
         const updatedArticle = await getArticleById(parseInt(articleId), token);
         return updatedArticle;
-      } catch (e: unknown) {
+      } catch {
         console.log("Could not fetch updated article, returning success");
         return null; // أو يمكن إرجاع object فارغ
       }
@@ -536,7 +536,7 @@ export const updateArticle = async (
         try {
           const updatedArticle = await getArticleById(parseInt(articleId), token);
           return updatedArticle;
-        } catch (e: unknown) {
+        } catch {
           return null;
         }
       }
@@ -550,7 +550,7 @@ export const updateArticle = async (
       try {
         const updatedArticle = await getArticleById(parseInt(articleId), token);
         return updatedArticle;
-      } catch (e: unknown) {
+      } catch {
         throw new Error("فشل تحديث المقال");
       }
     }
