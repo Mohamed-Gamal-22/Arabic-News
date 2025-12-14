@@ -178,7 +178,7 @@ export default function EditArticlePage({
 
       // استخدام الأسماء الصحيحة بالضبط (PascalCase) كما يتوقع API
       // const updateData = { ... }; // unused - using formData directly
-      console.log("gemy", formData);
+      // console.log("gemy", formData); // Debug log - معطل
       await updateArticle(articleId.toString(), formData, token);
 
       // تحديد رسالة النجاح بناءً على حالة المقالة

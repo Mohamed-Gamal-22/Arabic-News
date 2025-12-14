@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import ArticleCard from "@/components/ArticleCard";
-import { getCategories } from "@/lib/api";
-import { getArticles, ApiArticle } from "@/lib/api";
+import { getCategories, Category, ApiArticle } from "@/lib/api";
+import { getArticles } from "@/lib/api";
 import { Pagination } from "@/components/ui/pagination";
 
 // دالة لتطبيع الـ slug (إزالة المسافات والأحرف الخاصة)
@@ -24,9 +24,9 @@ export default function CategoryPage() {
   const slug = params?.slug as string;
   const normalizedSlug = normalizeSlug(slug || "");
 
-  const [categories, setCategories] = useState<any[]>([]);
-  const [category, setCategory] = useState<any>(null);
-  const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [category, setCategory] = useState<Category | null>(null);
+  const [subCategories, setSubCategories] = useState<Category[]>([]);
   const [categoryArticles, setCategoryArticles] = useState<ApiArticle[]>([]);
   const [categoryName, setCategoryName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ export default function CategoryPage() {
 
         // البحث عن التصنيف في جميع التصنيفات (الرئيسية والفرعية)
         // التصنيفات تأتي كقائمة مسطحة، التصنيفات الفرعية لها parentId
-        let foundCategory = cats?.find((cat: any) => {
+        let foundCategory = cats?.find((cat: Category) => {
           const catSlug = cat.slug ? normalizeSlug(cat.slug) : "";
           return catSlug === normalizedSlug;
         });
@@ -53,7 +53,7 @@ export default function CategoryPage() {
         // إذا لم نجد التصنيف، نبحث بشكل أكثر مرونة
         if (!foundCategory) {
           // البحث بدون تطبيع slug (في حالة وجود مشاكل في التطبيع)
-          foundCategory = cats?.find((cat: any) => {
+          foundCategory = cats?.find((cat: Category) => {
             if (!cat.slug) return false;
             const catSlug = cat.slug.toLowerCase().trim();
             const searchSlug = (slug || "").toLowerCase().trim();
@@ -65,7 +65,7 @@ export default function CategoryPage() {
           });
         }
 
-        setCategory(foundCategory);
+        setCategory(foundCategory || null);
 
         // إذا كان التصنيف رئيسي (parentId === null أو غير موجود)، نحصل على السابكاتيجوري
         if (foundCategory) {
@@ -82,7 +82,7 @@ export default function CategoryPage() {
                 ? parseInt(foundCategory.id, 10)
                 : foundCategory.id;
 
-            const subCats = (cats || []).filter((cat: any) => {
+            const subCats = (cats || []).filter((cat: Category) => {
               if (!cat.parentId) return false;
               const catParentId =
                 typeof cat.parentId === "string"
@@ -185,15 +185,14 @@ export default function CategoryPage() {
         };
 
         // التحقق من أن التصنيف رئيسي (ليس له parentId أو parentId === null)
-        const isMainCategory =
-          !(category as any).parentId || (category as any).parentId === null;
+        const isMainCategory = !category.parentId || category.parentId === null;
 
         // إنشاء قائمة بأسماء التصنيفات المطلوبة
         const categoryNamesToMatch: string[] = [category.name];
 
         // فقط إذا كان التصنيف رئيسي، نضيف أسماء السابكاتيجوري
         if (isMainCategory && subCategories.length > 0) {
-          subCategories.forEach((subCat: any) => {
+          subCategories.forEach((subCat: Category) => {
             if (subCat.name) {
               categoryNamesToMatch.push(subCat.name);
             }
@@ -205,7 +204,7 @@ export default function CategoryPage() {
         // console.log("Category name:", category.name);
         // console.log("Category ID:", category.id);
         // console.log("Is main category:", isMainCategory);
-        // console.log("Sub categories:", subCategories.map((c: any) => c.name));
+        // console.log("Sub categories:", subCategories.map((c: Category) => c.name));
         // console.log("Category names to match:", categoryNamesToMatch);
 
         // جلب جميع المقالات المنشورة
@@ -252,12 +251,13 @@ export default function CategoryPage() {
               }
             });
 
-            if (pageToFetch === 1) {
-              console.log(
-                "First page - Unique category names:",
-                Array.from(allUniqueCategoryNames)
-              );
-            }
+            // Logging معطل للـ production
+            // if (pageToFetch === 1) {
+            //   console.log(
+            //     "First page - Unique category names:",
+            //     Array.from(allUniqueCategoryNames)
+            //   );
+            // }
 
             // تصفية المقالات حسب التصنيف
             const filteredArticles = pageArticles.filter((article) => {

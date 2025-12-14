@@ -420,8 +420,6 @@ export const updateArticle = async (
     formDataToSend.append("slug", articleData.Slug);
     formDataToSend.append("categoryId", articleData.CategoryId);
 
-    console.log("Gemy debug FormDataToSend", formDataToSend);
-
     // طباعة FormData للتحقق
     console.log("FormData entries:");
     for (const [key, value] of formDataToSend.entries()) {

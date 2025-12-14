@@ -42,7 +42,7 @@ export default async function RootLayout({
             id: typeof cat.id === 'string' ? parseInt(cat.id, 10) : (typeof cat.id === 'number' ? cat.id : 0),
             name: cat.name,
             slug: cat.slug,
-            parentId: ('parentId' in cat && cat.parentId !== undefined) ? (cat as { parentId: number | null }).parentId : null,
+            parentId: cat.parentId ?? null,
           }))} />
         </AuthProvider>
       </body>
