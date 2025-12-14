@@ -17,8 +17,8 @@ import BackToDashboardButton from "@/components/BackToDashboardButton";
 import ArticleApprovalModal from "@/components/ArticleApprovalModal";
 import { getArticleById } from "@/lib/api";
 import { approveArticleUnpend, deleteArticle } from "@/lib/articles";
-import { ApiArticle, Category } from "@/lib/api";
-import { getCategoriesWithToken } from "@/lib/superAdminApi";
+import { ApiArticle } from "@/lib/api";
+import { getCategoriesWithToken, ApiCategory } from "@/lib/superAdminApi";
 import Link from "next/link";
 import { AlertModal } from "@/components/ui/alert-modal";
 
@@ -32,7 +32,7 @@ export default function ReviewArticle({
   const searchParams = useSearchParams();
   const resolvedParams = use(params);
   const [article, setArticle] = useState<ApiArticle | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -108,7 +108,7 @@ export default function ReviewArticle({
 
       // الحصول على CategoryId من categoryName
       const currentCategory = categories.find(
-        (cat: { name: string }) => cat.name === article.categoryName
+        (cat: ApiCategory) => cat.name === article.categoryName
       );
 
       if (!currentCategory) {
