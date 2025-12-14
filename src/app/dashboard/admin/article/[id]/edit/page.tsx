@@ -33,7 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
-import { getArticleById, updateArticle, ApiArticle, Category } from "@/lib/api";
+import { getArticleById, updateArticle, Category } from "@/lib/api";
 import { getCategoriesWithToken } from "@/lib/superAdminApi";
 
 export default function EditArticlePage({

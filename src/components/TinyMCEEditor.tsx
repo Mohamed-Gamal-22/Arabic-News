@@ -178,7 +178,6 @@ export default function TinyMCEEditor({
 
   // تحديث المحتوى عند تغيير value من الخارج
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (quillRef.current && value !== quillRef.current.root.innerHTML) {
       quillRef.current.root.innerHTML = value;
     }

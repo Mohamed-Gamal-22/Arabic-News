@@ -1,4 +1,3 @@
-/* eslint-disable */
 // import NextAuth from "next-auth"; // unused
 declare module "next-auth" {
   interface Session {
@@ -33,9 +32,3 @@ declare module "next-auth/jwt" {
     categoryIds?: unknown;
   }
 }
-
-
-
-
-
-
