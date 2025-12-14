@@ -51,7 +51,7 @@ export default function ArticleApprovalModal({
       setIsTrending(false);
       setTrendPeriodInDays(1);
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "حدث خطأ في الموافقة على المقال");
     }
   };

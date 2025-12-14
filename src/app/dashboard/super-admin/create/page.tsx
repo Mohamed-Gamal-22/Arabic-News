@@ -85,7 +85,7 @@ export default function SuperAdminCreateArticlePage() {
           session.accessToken
         );
         setCategories(categoriesData || []);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error fetching categories:", err);
       }
     };
@@ -230,7 +230,7 @@ export default function SuperAdminCreateArticlePage() {
       if (createdArticle) {
         setShowSuccessModal(true);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "حدث خطأ في إنشاء المقال");
       console.error("Error creating article:", err);
     } finally {

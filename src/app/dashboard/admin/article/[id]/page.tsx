@@ -76,7 +76,7 @@ export default function ReviewArticle({
         } else {
           setError("لم يتم العثور على المقال");
         }
-      } catch (err) {
+      } catch (err: unknown) {
         setError("حدث خطأ في جلب المقال");
         console.error("Error fetching article:", err);
       } finally {
@@ -128,7 +128,7 @@ export default function ReviewArticle({
       await approveArticleUnpend(article.id, approveData, session.accessToken);
       setActionSuccess("تم الموافقة على المقال بنجاح");
       setShowSuccessModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "حدث خطأ في الموافقة على المقال");
       setShowErrorModal(true);
       console.error("Error approving article:", err);
@@ -156,7 +156,7 @@ export default function ReviewArticle({
       await deleteArticle(article.id, session.accessToken);
       setActionSuccess("تم رفض وحذف المقال بنجاح");
       setShowSuccessModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "حدث خطأ في حذف المقال");
       setShowErrorModal(true);
       console.error("Error deleting article:", err);

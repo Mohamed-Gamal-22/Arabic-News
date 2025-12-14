@@ -106,7 +106,7 @@ export default function EditCategoryPage({
         if (categoriesData) {
           setCategories(categoriesData);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching category:", err);
         setError(err.message || "حدث خطأ في جلب بيانات التصنيف");
       } finally {

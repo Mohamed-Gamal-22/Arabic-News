@@ -41,7 +41,7 @@ export default function SignInPage() {
       } else if (result?.ok) {
         // الحصول على الجلسة لتحديد الدور
         const session = await getSession();
-        const role = (session as any)?.user?.role;
+        const role = session?.user?.role;
 
         if (role) {
           // توجيه المستخدم حسب دوره

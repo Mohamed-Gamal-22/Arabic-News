@@ -123,7 +123,7 @@ export default function EditArticlePage({
         if (categoriesData) {
           setCategories(categoriesData || []);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         setError("حدث خطأ في جلب البيانات");
         console.error("Error fetching data:", err);
       } finally {
@@ -198,7 +198,7 @@ export default function EditArticlePage({
       }
 
       setShowSuccessModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating article:", err);
       setErrorMessage(err.message || "حدث خطأ في تعديل المقال");
       setShowErrorModal(true);

@@ -51,7 +51,7 @@ export const API_ENDPOINTS = {
 };
 
 // أنواع الاستجابات
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -181,7 +181,7 @@ export interface UpdateUserRequest extends Partial<CreateUserRequest> {
 }
 
 // دوال مساعدة للـ API
-export const apiRequest = async <T = any>(
+export const apiRequest = async <T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> => {
@@ -204,7 +204,7 @@ export const apiRequest = async <T = any>(
     }
 
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في API:", error);
     throw error;
   }
@@ -300,7 +300,7 @@ export const getArticles = async (
     const data = await response.json();
     console.log("Articles data received:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching articles:", error);
     return {
       pageIndex: 1,
@@ -343,7 +343,7 @@ export const getArticleById = async (
     const data = await response.json();
     console.log("Article data received:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching article:", error);
     return null;
   }
@@ -384,7 +384,7 @@ export const getArticleBySlug = async (
     const data = await response.json();
     console.log("Article data received:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching article by slug:", error);
     return null;
   }
@@ -444,7 +444,7 @@ export const updateArticle = async (
 
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
-      let errorDetails: any = null;
+      let errorDetails: unknown = null;
 
       try {
         const contentType = response.headers.get("content-type");
@@ -453,7 +453,13 @@ export const updateArticle = async (
           console.log("Error response JSON:", errorDetails);
 
           // إذا كان هناك validation errors، نعرضها بشكل واضح مع ترجمة للعربي
-          if (errorDetails.errors) {
+          if (
+            errorDetails &&
+            typeof errorDetails === "object" &&
+            "errors" in errorDetails &&
+            errorDetails.errors &&
+            typeof errorDetails.errors === "object"
+          ) {
             const fieldNames: Record<string, string> = {
               'Title': 'العنوان',
               'Content': 'المحتوى',
@@ -466,30 +472,38 @@ export const updateArticle = async (
             
             const validationErrors: string[] = [];
             Object.keys(errorDetails.errors).forEach((field) => {
-              const fieldErrors = errorDetails.errors[field];
+              const fieldErrors = (errorDetails.errors as Record<string, unknown>)[field];
               const arabicFieldName = fieldNames[field] || field;
               if (Array.isArray(fieldErrors)) {
-                fieldErrors.forEach((err: string) => {
-                  validationErrors.push(`❌ ${arabicFieldName}: ${err}`);
+                fieldErrors.forEach((err: unknown) => {
+                  if (typeof err === "string") {
+                    validationErrors.push(`❌ ${arabicFieldName}: ${err}`);
+                  }
                 });
               }
             });
             if (validationErrors.length > 0) {
               errorMessage = validationErrors.join("\n");
             } else {
+              const errorObj = errorDetails as Record<string, unknown>;
               errorMessage =
-                errorDetails.title || errorDetails.message || errorMessage;
+                (typeof errorObj.title === "string" ? errorObj.title : null) ||
+                (typeof errorObj.message === "string" ? errorObj.message : null) ||
+                errorMessage;
             }
           } else {
+            const errorObj = errorDetails as Record<string, unknown>;
             errorMessage =
-              errorDetails.title || errorDetails.message || errorMessage;
+              (typeof errorObj.title === "string" ? errorObj.title : null) ||
+              (typeof errorObj.message === "string" ? errorObj.message : null) ||
+              errorMessage;
           }
         } else {
           const text = await response.text();
           console.log("Error response text:", text);
           errorMessage = text || errorMessage;
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.error("Error reading error response:", e);
       }
 
@@ -507,7 +521,7 @@ export const updateArticle = async (
       try {
         const updatedArticle = await getArticleById(parseInt(articleId), token);
         return updatedArticle;
-      } catch (e) {
+      } catch (e: unknown) {
         console.log("Could not fetch updated article, returning success");
         return null; // أو يمكن إرجاع object فارغ
       }
@@ -522,7 +536,7 @@ export const updateArticle = async (
         try {
           const updatedArticle = await getArticleById(parseInt(articleId), token);
           return updatedArticle;
-        } catch (e) {
+        } catch (e: unknown) {
           return null;
         }
       }
@@ -530,17 +544,17 @@ export const updateArticle = async (
       const data = JSON.parse(text);
       console.log("✅ Article updated successfully:", data);
       return data;
-    } catch (parseError) {
+    } catch (parseError: unknown) {
       console.error("Error parsing response:", parseError);
       // محاولة جلب المقال المحدث كـ fallback
       try {
         const updatedArticle = await getArticleById(parseInt(articleId), token);
         return updatedArticle;
-      } catch (e) {
+      } catch (e: unknown) {
         throw new Error("فشل تحديث المقال");
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error updating article:", error);
     throw error; // رمي الـ error بدل إرجاع null
   }
@@ -635,14 +649,14 @@ export const createArticle = async (
             } else {
               errorMessage = text;
             }
-          } catch (parseError) {
+          } catch (parseError: unknown) {
             console.error("JSON Parse Error:", parseError);
             errorMessage = text || `Bad Request (${response.status})`;
           }
         } else {
           errorMessage = text || `Bad Request (${response.status})`;
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error reading error response:", err);
         errorMessage = `Bad Request (${response.status})`;
       }
@@ -659,11 +673,17 @@ export const createArticle = async (
     const data = await response.json();
     console.log("Article created:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error creating article:", error);
     throw error;
   }
 };
+
+// Export getCurrentUser from superAdminApi for backward compatibility
+export { getCurrentUser } from "@/lib/superAdminApi";
+
+// Type alias for CurrentUserProfile
+export type CurrentUserProfile = ApiUser;
 
 // دالة لجلب بيانات المستخدم الحالي
 export const getCurrentUserMe = async (token: string): Promise<ApiUser | null> => {
@@ -691,7 +711,7 @@ export const getCurrentUserMe = async (token: string): Promise<ApiUser | null> =
     console.log("User categories:", data.categories);
     console.log("User categoryIds:", data.categoryIds);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching current user:", error);
     return null;
   }
@@ -714,7 +734,7 @@ export const getCategories = async (): Promise<Category[]> => {
     const data = await response.json();
     console.log("Categories data received:", data);
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching categories:", error);
     // إرجاع مصفوفة فارغة بدلاً من إلقاء الخطأ
     return [];

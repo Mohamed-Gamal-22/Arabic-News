@@ -155,7 +155,7 @@ export default function AdminCreateArticlePage() {
 
         setCategories(filteredCategories);
         setError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("❌ Error fetching categories:", err);
         setCategories([]);
         setError("حدث خطأ في جلب التصنيفات. يرجى المحاولة مرة أخرى.");

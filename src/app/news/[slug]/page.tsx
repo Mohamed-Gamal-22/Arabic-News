@@ -185,7 +185,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
         } else {
           setError("لم يتم العثور على المقال");
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error fetching data:", err);
         setError("حدث خطأ في جلب البيانات");
       } finally {
@@ -220,7 +220,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
             } else {
               hasMore = false;
             }
-          } catch (err) {
+          } catch (err: unknown) {
             console.error("Error fetching articles page:", err);
             hasMore = false;
           }
@@ -234,7 +234,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
         );
 
         setRelatedArticles(sameCategory);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error fetching related articles:", err);
       }
     };
@@ -254,7 +254,7 @@ export default function NewsDetailPage({ params }: NewsDetailPageProps) {
         } else {
           setError("لم يتم العثور على المقال");
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error fetching data:", err);
         setError("حدث خطأ في جلب البيانات");
       } finally {

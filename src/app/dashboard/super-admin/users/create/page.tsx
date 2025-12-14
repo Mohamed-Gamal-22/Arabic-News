@@ -86,7 +86,7 @@ export default function CreateUserPage() {
         );
         // جلب كل التصنيفات (الرئيسية والفرعية)
         setCategories(categoriesData);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("خطأ في جلب التصنيفات:", error);
       } finally {
         setLoadingCategories(false);
@@ -122,7 +122,7 @@ export default function CreateUserPage() {
 
       setSuccess("تم إضافة المستخدم بنجاح!");
       setShowAlert(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("خطأ في إنشاء المستخدم:", error);
       setError(error.message || "حدث خطأ في إضافة المستخدم");
       setShowAlert(true);

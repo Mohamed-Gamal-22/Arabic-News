@@ -56,7 +56,7 @@ export default function ArticleDetails({
 
         if (articleData) {
           // التحقق من أن المقال ملك للكاتب
-          const currentUserId = (session.user as any)?.id;
+          const currentUserId = session.user?.id;
           if (articleData.authorId !== currentUserId) {
             setError("ليس لديك صلاحية لعرض هذا المقال");
             setLoading(false);
@@ -77,7 +77,7 @@ export default function ArticleDetails({
         } else {
           setError("لم يتم العثور على المقال");
         }
-      } catch (err) {
+      } catch (err: unknown) {
         setError("حدث خطأ في جلب المقال");
         console.error("Error fetching article:", err);
       } finally {

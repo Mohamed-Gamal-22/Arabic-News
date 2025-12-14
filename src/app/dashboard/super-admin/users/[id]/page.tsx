@@ -36,7 +36,7 @@ export default function UserDetailsPage() {
         console.log("بيانات المستخدم:", userData);
 
         setUserData(userData);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("خطأ في جلب بيانات المستخدم:", error);
         setError(error.message || "لم نتمكن من جلب بيانات المستخدم");
       } finally {

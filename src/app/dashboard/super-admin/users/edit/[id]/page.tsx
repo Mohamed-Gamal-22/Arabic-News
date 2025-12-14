@@ -118,7 +118,7 @@ export default function EditUserPage() {
         }
 
         console.log("تم حفظ البيانات للعرض");
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("خطأ في جلب بيانات المستخدم:", error);
         setError(error.message || "لم نتمكن من جلب بيانات المستخدم");
         setShowErrorModal(true);
@@ -207,7 +207,7 @@ export default function EditUserPage() {
       try {
         const updatedUserData = await getUserById(session.accessToken, userId);
         setUserData(updatedUserData);
-      } catch (refreshError: any) {
+      } catch (refreshError: unknown) {
         console.error("خطأ في إعادة جلب البيانات:", refreshError);
         // لا نعرض خطأ هنا لأن التحديث نجح بالفعل
       }

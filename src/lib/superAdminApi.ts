@@ -15,7 +15,7 @@ export const getUsers = async (token: string) => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في جلب المستخدمين:", error);
     throw error;
   }
@@ -42,7 +42,7 @@ export const createUser = async (token: string, userData: any) => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في إنشاء المستخدم:", error);
     throw error;
   }
@@ -68,7 +68,7 @@ export const getUserById = async (token: string, userId: string) => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في جلب المستخدم:", error);
     throw error;
   }
@@ -103,7 +103,7 @@ export const updateUser = async (token: string, userData: any) => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في تحديث المستخدم:", error);
     throw error;
   }
@@ -145,7 +145,7 @@ export const updateUserRoles = async (
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في تحديث أدوار المستخدم:", error);
     throw error;
   }
@@ -179,7 +179,7 @@ export const deleteUser = async (token: string, userId: string) => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في حذف المستخدم:", error);
     throw error;
   }
@@ -197,7 +197,7 @@ function decodeJWT(token: string) {
         .join("")
     );
     return JSON.parse(jsonPayload);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في فك تشفير JWT:", error);
     return null;
   }
@@ -285,7 +285,7 @@ export const getCurrentUser = async (
       if (response.status === 403 || response.status === 401) {
         console.warn("⚠️ /users/profile endpoint returned", response.status);
       }
-    } catch (profileError: any) {
+    } catch (profileError: unknown) {
       console.error("❌ Profile endpoint error:", profileError);
       console.error("Error message:", profileError.message);
     }
@@ -472,7 +472,7 @@ export const getCurrentUser = async (
       "All endpoints returned 403 or failed. User may not have permission to access user data."
     );
     return null;
-  } catch (error: any) {
+    } catch (error: unknown) {
     console.error("❌ خطأ في جلب بيانات المستخدم الحالي:", error);
     return null;
   }
@@ -507,7 +507,7 @@ export const getCategoriesWithToken = async (token: string) => {
       Array.isArray(data) ? data.length : "Not an array"
     );
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("❌ خطأ في جلب الكاتيجوريز:", error);
     throw error;
   }
@@ -533,7 +533,7 @@ export const getCategoryById = async (token: string, categoryId: number) => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في جلب الكاتيجوري:", error);
     throw error;
   }
@@ -585,7 +585,7 @@ export const updateCategory = async (
       // إذا لم يكن JSON، نرجع رسالة نجاح
       return { success: true, message: "تم التحديث بنجاح" };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في تحديث الكاتيجوري:", error);
     throw error;
   }
@@ -632,7 +632,7 @@ export const deleteCategory = async (token: string, categoryId: number) => {
       // إذا لم يكن JSON، نرجع رسالة نجاح
       return { success: true, message: "تم الحذف بنجاح" };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في حذف الكاتيجوري:", error);
     throw error;
   }
@@ -668,7 +668,7 @@ export const createCategory = async (token: string, categoryData: any) => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("خطأ في إنشاء الكاتيجوري:", error);
     throw error;
   }

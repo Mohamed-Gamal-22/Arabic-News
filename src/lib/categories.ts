@@ -1,5 +1,7 @@
+import { Category } from "@/lib/api";
+
 // Server Action لجلب التصنيفات
-export async function getCategoriesServer() {
+export async function getCategoriesServer(): Promise<Category[]> {
   try {
     const response = await fetch(
       "https://newswebsite.runasp.net/api/category",
@@ -16,8 +18,8 @@ export async function getCategoriesServer() {
     }
 
     const data = await response.json();
-    return data;
-  } catch (error) {
+    return data as Category[];
+  } catch (error: unknown) {
     console.error("Error fetching categories in server:", error);
     // إرجاع تصنيفات ثابتة في حالة فشل الـ API
     return [

@@ -98,7 +98,7 @@ export default function CreateArticlePage() {
           setCategories([]);
           setError("لم يتم تخصيص أقسام لك بعد. يرجى التواصل مع المسؤول.");
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("❌ Error fetching user categories:", err);
         setCategories([]);
         setError("حدث خطأ في جلب الأقسام المسموح لك بالكتابة فيها.");

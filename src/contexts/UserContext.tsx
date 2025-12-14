@@ -30,7 +30,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       // الحصول على userId من session - هذا هو الـ ID المستخدم في URL
-      const userId = (session.user as any)?.id;
+      const userId = session.user?.id;
       if (!userId) {
         console.error("❌ User ID not found in session");
         console.error("Session user object:", session.user);
@@ -67,8 +67,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
           console.warn("⚠️ Endpoint returned 403 - user may not have permission");
           
           // محاولة استخدام categories من session إذا كانت موجودة
-          const sessionCategories = (session.user as any)?.categories;
-          const sessionCategoryIds = (session.user as any)?.categoryIds;
+          const sessionCategories = session.user?.categories;
+          const sessionCategoryIds = session.user?.categoryIds;
           
           if (sessionCategories || sessionCategoryIds) {
             console.log("✅ Using categories from session as fallback");
@@ -108,7 +108,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       setUserData(data);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("❌ Error fetching user data:", err);
       setError(err.message || "حدث خطأ في جلب بيانات المستخدم");
       setUserData(null);
@@ -124,7 +124,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUserData(null);
       setLoading(false);
     }
-  }, [session?.accessToken, (session?.user as any)?.id]);
+  }, [session?.accessToken, session?.user?.id]);
 
   return (
     <UserContext.Provider
