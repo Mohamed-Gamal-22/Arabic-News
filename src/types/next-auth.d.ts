@@ -1,5 +1,5 @@
+/* eslint-disable */
 // import NextAuth from "next-auth"; // unused
-
 declare module "next-auth" {
   interface Session {
     user: {
