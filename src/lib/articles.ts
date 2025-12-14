@@ -21,7 +21,7 @@ export const getArticlesServer = async (
 
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching articles:", error);
     return {
       pageIndex: 1,
@@ -53,7 +53,7 @@ export const approveArticle = async (
       const error = await response.json();
       throw new Error(error.message || "فشل في قبول المقال");
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error approving article:", error);
     throw error;
   }
@@ -93,7 +93,7 @@ export const approveArticleUnpend = async (
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.title || errorMessage;
-      } catch (e) {
+      } catch (e: unknown) {
         // إذا لم يكن هناك JSON في الرد
         const text = await response.text();
         if (text) errorMessage = text;
@@ -101,7 +101,7 @@ export const approveArticleUnpend = async (
       throw new Error(errorMessage || "فشل في الموافقة على المقال");
     }
     // Response 204 No Content - لا يوجد body
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error approving article:", error);
     throw error;
   }
@@ -130,7 +130,7 @@ export const rejectArticle = async (
       const error = await response.json();
       throw new Error(error.message || "فشل في رفض المقال");
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error rejecting article:", error);
     throw error;
   }
@@ -156,7 +156,7 @@ export const deleteArticle = async (
       const error = await response.json();
       throw new Error(error.message || "فشل في حذف المقال");
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error deleting article:", error);
     throw error;
   }

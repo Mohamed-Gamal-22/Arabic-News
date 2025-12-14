@@ -214,7 +214,7 @@ export default function EditUserPage() {
 
       // إعادة تعيين النموذج
       reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("خطأ في تحديث المستخدم:", error);
       setError(error.message || "لم نتمكن من تحديث المستخدم");
       setShowErrorModal(true);
@@ -495,7 +495,7 @@ export default function EditUserPage() {
                   <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                     {selectedCategoryIds.map((categoryId) => {
                       const category = categories.find(
-                        (cat: any) => cat.id === categoryId
+                        (cat: { id: number }) => cat.id === categoryId
                       );
                       if (!category) return null;
 
@@ -547,7 +547,7 @@ export default function EditUserPage() {
                   </div>
                 ) : categories.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
-                    {categories.map((category: any) => {
+                    {categories.map((category: { id: number; name: string; slug: string; parentId: number | null }) => {
                       const isSelected = selectedCategoryIds.includes(
                         category.id
                       );
@@ -555,7 +555,7 @@ export default function EditUserPage() {
                       const isSubCategory = category.parentId !== null;
                       const parentCategory = isSubCategory
                         ? categories.find(
-                            (cat: any) => cat.id === category.parentId
+                            (cat: { id: number }) => cat.id === category.parentId
                           )
                         : null;
 

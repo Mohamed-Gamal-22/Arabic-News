@@ -62,7 +62,7 @@ export default function CreateArticleForm() {
 
       // سيتم إرسال المقالة للـ API
       // await submitArticle(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("خطأ في إنشاء المقالة:", error);
     } finally {
       setIsLoading(false);

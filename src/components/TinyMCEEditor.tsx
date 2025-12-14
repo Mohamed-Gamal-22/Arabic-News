@@ -144,7 +144,7 @@ export default function TinyMCEEditor({
         });
 
         quillRef.current = quill;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error loading Quill:", error);
       }
     };

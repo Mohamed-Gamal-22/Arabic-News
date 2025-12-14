@@ -147,7 +147,7 @@ export default function EditCategoryPage({
       }
 
       // إعداد البيانات للإرسال
-      const updateData: any = {
+      const updateData: { name: string; slug: string; description?: string | null; parentId?: number | null } = {
         name: formData.name.trim(),
         slug: formData.slug.trim(),
         description: formData.description.trim() || null,
@@ -165,7 +165,7 @@ export default function EditCategoryPage({
 
       setSuccessMessage("تم تحديث التصنيف بنجاح");
       setShowSuccessModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating category:", err);
       setErrorMessage(
         err.message || "حدث خطأ أثناء تحديث التصنيف. يرجى المحاولة مرة أخرى."

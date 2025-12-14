@@ -83,11 +83,11 @@ export default function AdminCreateArticlePage() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
 
-  const normalizeCategoryIds = (userData: any) => {
+  const normalizeCategoryIds = (userData: { categoryIds?: number[]; CategoryIds?: number[]; categories?: Array<{ id?: number; categoryId?: number }> }) => {
     const fromArray =
       userData?.categoryIds ||
       userData?.CategoryIds ||
-      userData?.categories?.map((c: any) => c.id ?? c.categoryId) ||
+      userData?.categories?.map((c: { id?: number; categoryId?: number }) => c.id ?? c.categoryId) ||
       [];
 
     const fromStringList =
@@ -101,7 +101,7 @@ export default function AdminCreateArticlePage() {
     const raw = fromNestedString || fromStringList || [];
 
     return (Array.isArray(raw) ? raw : [raw])
-      .map((id: any) => Number(id))
+      .map((id: number | string) => Number(id))
       .filter((id: number) => !isNaN(id));
   };
 
@@ -132,7 +132,7 @@ export default function AdminCreateArticlePage() {
 
         const allowedCategoryIds = normalizeCategoryIds(userData);
         const allowedCategoriesFromUser = (userData?.categories || []).map(
-          (c: any) => ({
+          (c: { id?: number; categoryId?: number }) => ({
             ...c,
             id: c.id ?? c.categoryId,
           })
@@ -146,7 +146,7 @@ export default function AdminCreateArticlePage() {
         // - إذا كانت categoryIds فارغة نستخدم ما رجع في categories مباشرة.
         const filteredCategories =
           allowedCategoryIds.length > 0
-            ? (allCategories || []).filter((cat: any) =>
+            ? (allCategories || []).filter((cat: { id: number }) =>
                 allowedCategoryIds.includes(Number(cat.id ?? cat.categoryId))
               )
             : allowedCategoriesFromUser;
@@ -285,7 +285,7 @@ export default function AdminCreateArticlePage() {
       const allowedCategoryIds =
         currentUser?.categoryIds && currentUser.categoryIds.length > 0
           ? currentUser.categoryIds
-          : currentUser?.categories?.map((c: any) => c.id ?? c.categoryId) || [];
+          : currentUser?.categories?.map((c: { id?: number; categoryId?: number }) => c.id ?? c.categoryId) || [];
 
       if (
         allowedCategoryIds.length > 0 &&
@@ -320,7 +320,7 @@ export default function AdminCreateArticlePage() {
       if (createdArticle) {
         setShowSuccessModal(true);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "حدث خطأ في إنشاء المقال");
       console.error("Error creating article:", err);
     } finally {

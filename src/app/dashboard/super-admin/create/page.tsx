@@ -345,7 +345,7 @@ export default function SuperAdminCreateArticlePage() {
                     <SelectValue placeholder="اختر القسم" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category: any) => (
+                    {categories.map((category: { id: number; name: string }) => (
                       <SelectItem
                         key={category.id}
                         value={category.id.toString()}

@@ -21,8 +21,33 @@ export const getUsers = async (token: string) => {
   }
 };
 
+// Types for user operations
+export interface CreateUserData {
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+  categoryIds?: number[];
+}
+
+export interface UpdateUserData {
+  id?: string;
+  name?: string;
+  email?: string;
+  password?: string;
+  role?: string;
+  categoryIds?: number[];
+}
+
+export interface CategoryData {
+  name: string;
+  slug: string;
+  description?: string | null;
+  parentId?: number | null;
+}
+
 // دالة لإنشاء مستخدم جديد
-export const createUser = async (token: string, userData: any) => {
+export const createUser = async (token: string, userData: CreateUserData) => {
   try {
     const response = await fetch("https://newswebsite.runasp.net/api/users", {
       method: "POST",
@@ -75,7 +100,7 @@ export const getUserById = async (token: string, userId: string) => {
 };
 
 // دالة لتحديث مستخدم
-export const updateUser = async (token: string, userData: any) => {
+export const updateUser = async (token: string, userData: UpdateUserData) => {
   try {
     const response = await fetch(
       "https://newswebsite.runasp.net/api/users/update-user",
@@ -250,7 +275,7 @@ export const getCurrentUser = async (
         ) {
           console.log("✅ Extracting categoryIds from categories array");
           const extractedCategoryIds = data.categories.map(
-            (cat: any) => cat.id
+            (cat: { id: number }) => cat.id
           );
           console.log("Extracted categoryIds:", extractedCategoryIds);
           return {
@@ -272,11 +297,11 @@ export const getCurrentUser = async (
             try {
               const errorData = JSON.parse(errorText);
               console.log("Profile endpoint error JSON:", errorData);
-            } catch (e) {
+            } catch (e: unknown) {
               // ليس JSON
             }
           }
-        } catch (e) {
+        } catch (e: unknown) {
           console.log("Could not read error response");
         }
       }
@@ -372,7 +397,7 @@ export const getCurrentUser = async (
                   "✅ Extracting categoryIds from categories array (by ID)"
                 );
                 const extractedCategoryIds = userData.categories.map(
-                  (cat: any) => cat.id
+                  (cat: { id: number }) => cat.id
                 );
                 console.log("Extracted categoryIds:", extractedCategoryIds);
                 return {
@@ -389,12 +414,12 @@ export const getCurrentUser = async (
                 userResponse.status
               );
             }
-          } catch (userError) {
+          } catch (userError: unknown) {
             console.error("Error fetching user by ID:", userError);
           }
         }
       }
-    } catch (jwtError) {
+    } catch (jwtError: unknown) {
       console.error("Error decoding JWT:", jwtError);
     }
 
@@ -423,7 +448,7 @@ export const getCurrentUser = async (
           console.log("✅ Fetched all users, searching for current user");
 
           if (Array.isArray(users)) {
-            const currentUser = users.find((u: any) => u.email === email);
+            const currentUser = users.find((u: { email: string }) => u.email === email);
             if (currentUser) {
               console.log("✅ Found current user in users list:", currentUser);
 
@@ -445,7 +470,7 @@ export const getCurrentUser = async (
                   "✅ Extracting categoryIds from categories array (users list)"
                 );
                 const extractedCategoryIds = currentUser.categories.map(
-                  (cat: any) => cat.id
+                  (cat: { id: number }) => cat.id
                 );
                 return {
                   ...currentUser,
@@ -462,7 +487,7 @@ export const getCurrentUser = async (
             usersResponse.status
           );
         }
-      } catch (usersError) {
+      } catch (usersError: unknown) {
         console.error("Error fetching users list:", usersError);
       }
     }
@@ -543,7 +568,7 @@ export const getCategoryById = async (token: string, categoryId: number) => {
 export const updateCategory = async (
   token: string,
   categoryId: number,
-  categoryData: any
+  categoryData: CategoryData
 ) => {
   try {
     console.log("Updating category data:", categoryData);
@@ -577,7 +602,7 @@ export const updateCategory = async (
       try {
         const data = await response.json();
         return data;
-      } catch (jsonError) {
+      } catch (jsonError: unknown) {
         console.log("Response is not valid JSON, treating as success");
         return { success: true, message: "تم التحديث بنجاح" };
       }
@@ -624,7 +649,7 @@ export const deleteCategory = async (token: string, categoryId: number) => {
       try {
         const data = await response.json();
         return data;
-      } catch (jsonError) {
+      } catch (jsonError: unknown) {
         console.log("Response is not valid JSON, treating as success");
         return { success: true, message: "تم الحذف بنجاح" };
       }
@@ -639,7 +664,7 @@ export const deleteCategory = async (token: string, categoryId: number) => {
 };
 
 // دالة لإنشاء كاتيجوري جديد
-export const createCategory = async (token: string, categoryData: any) => {
+export const createCategory = async (token: string, categoryData: CategoryData) => {
   try {
     console.log("Sending category data:", categoryData);
 

@@ -197,7 +197,7 @@ export default function Home() {
             } else {
               hasMore = false;
             }
-          } catch (err) {
+          } catch (err: unknown) {
             console.error("Error fetching articles page:", err);
             hasMore = false;
           }
@@ -208,7 +208,7 @@ export default function Home() {
 
         console.log("=== All Articles Fetched ===");
         console.log("Total Articles:", allArticles.length);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching articles:", error);
         setError("حدث خطأ في جلب البيانات");
       } finally {

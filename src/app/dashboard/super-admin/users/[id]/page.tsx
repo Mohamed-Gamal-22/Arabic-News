@@ -307,7 +307,7 @@ export default function UserDetailsPage() {
                     التصنيفات المرتبطة
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {userData.categories.map((category: any) => (
+                    {userData.categories.map((category: { id: number; name: string; slug: string }) => (
                       <span
                         key={category.id}
                         className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm arabic-text"

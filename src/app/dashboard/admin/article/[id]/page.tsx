@@ -107,7 +107,7 @@ export default function ReviewArticle({
 
       // الحصول على CategoryId من categoryName
       const currentCategory = categories.find(
-        (cat: any) => cat.name === article.categoryName
+        (cat: { name: string }) => cat.name === article.categoryName
       );
 
       if (!currentCategory) {

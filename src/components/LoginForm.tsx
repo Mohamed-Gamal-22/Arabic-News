@@ -45,7 +45,7 @@ export default function LoginForm() {
 
       // سيتم توجيه المستخدم حسب دوره
       // window.location.href = '/dashboard';
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("خطأ في تسجيل الدخول:", error);
     } finally {
       setIsLoading(false);

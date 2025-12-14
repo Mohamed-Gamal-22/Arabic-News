@@ -312,7 +312,7 @@ export default function CreateArticlePage() {
       if (createdArticle) {
         setShowSuccessModal(true);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("=== Error Creating Article ===");
       console.error("Full error:", err);
       console.error("Error message:", err.message);

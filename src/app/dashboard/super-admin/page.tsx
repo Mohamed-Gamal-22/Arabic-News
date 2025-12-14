@@ -45,7 +45,22 @@ import {
   getArticleById,
   updateArticle,
   ApiArticle,
+  ApiUser,
 } from "@/lib/api";
+
+// Type for user with roles
+interface UserWithRoles extends ApiUser {
+  roles: string[];
+}
+
+// Type for category from API
+interface ApiCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  parentId: number | null;
+}
 
 export default function SuperAdminDashboard() {
   const { data: session } = useSession();
@@ -167,13 +182,13 @@ export default function SuperAdminDashboard() {
         const stats = {
           totalUsers: usersData.length,
           totalWriters: usersData.filter(
-            (user: any) => user.roles && user.roles.includes("User")
+            (user: UserWithRoles) => user.roles && user.roles.includes("User")
           ).length,
           totalAdmins: usersData.filter(
-            (user: any) => user.roles && user.roles.includes("Admin")
+            (user: UserWithRoles) => user.roles && user.roles.includes("Admin")
           ).length,
           totalSuperAdmins: usersData.filter(
-            (user: any) => user.roles && user.roles.includes("SuperAdmin")
+            (user: UserWithRoles) => user.roles && user.roles.includes("SuperAdmin")
           ).length,
           totalArticles: articlesData.totalCount || articles.length,
           publishedArticles:
@@ -201,7 +216,7 @@ export default function SuperAdminDashboard() {
   };
 
   // دالة لفتح modal الحذف
-  const handleDeleteClick = (user: any) => {
+  const handleDeleteClick = (user: UserWithRoles) => {
     // فحص إذا كان المستخدم سوبر أدمن
     if (user.roles && user.roles.includes("SuperAdmin")) {
       setDeleteError("غير مسموح بحذف السوبر أدمن");
@@ -219,7 +234,7 @@ export default function SuperAdminDashboard() {
   };
 
   // دالة لفتح modal تحديث الدور
-  const handleUpdateRoleClick = (user: any) => {
+  const handleUpdateRoleClick = (user: UserWithRoles) => {
     // فحص إذا كان المستخدم سوبر أدمن
     if (user.roles && user.roles.includes("SuperAdmin")) {
       setRoleUpdateError("غير مسموح بتحديث دور السوبر أدمن");
@@ -333,7 +348,7 @@ export default function SuperAdminDashboard() {
   };
 
   // دالة فتح Modal حذف الكاتيجوري
-  const handleDeleteCategoryClick = (category: any) => {
+  const handleDeleteCategoryClick = (category: ApiCategory) => {
     setCategoryToDelete(category);
     setShowDeleteCategoryModal(true);
   };
@@ -355,7 +370,7 @@ export default function SuperAdminDashboard() {
         try {
           await deleteCategory(session.accessToken, subcategory.id);
           console.log(`تم حذف السابكاتيجوري: ${subcategory.name}`);
-        } catch (subError) {
+        } catch (subError: unknown) {
           console.error(
             `خطأ في حذف السابكاتيجوري ${subcategory.name}:`,
             subError
@@ -796,9 +811,9 @@ export default function SuperAdminDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {categories.length > 0 ? (
-                    categories.map((category: any) => {
+                    categories.map((category: ApiCategory) => {
                       const subCategories = categories.filter(
-                        (cat: any) => cat.parentId === category.id
+                        (cat: ApiCategory) => cat.parentId === category.id
                       );
 
                       return (
@@ -834,7 +849,7 @@ export default function SuperAdminDashboard() {
                                   التصنيفات الفرعية:
                                 </h4>
                                 <div className="space-y-1">
-                                  {subCategories.map((subCategory: any) => (
+                                  {subCategories.map((subCategory: ApiCategory) => (
                                     <div
                                       key={subCategory.id}
                                       className="text-sm text-gray-600 dark:text-gray-400 arabic-text"
@@ -901,7 +916,7 @@ export default function SuperAdminDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {users.length > 0 ? (
-                    users.map((user: any) => (
+                    users.map((user: UserWithRoles) => (
                       <div
                         key={user.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
@@ -921,7 +936,7 @@ export default function SuperAdminDashboard() {
                           {user.categories && user.categories.length > 0 && (
                             <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
                               <span>📂 التصنيفات:</span>
-                              {user.categories.map((cat: any, idx: number) => (
+                              {user.categories.map((cat: { id: number; name: string }, idx: number) => (
                                 <span
                                   key={cat.id}
                                   className="px-2 py-1 bg-gray-100 rounded"
@@ -1296,8 +1311,8 @@ export default function SuperAdminDashboard() {
               >
                 <option value="">كاتيجوري رئيسي</option>
                 {categories
-                  .filter((cat: any) => cat.parentId === null)
-                  .map((category: any) => (
+                  .filter((cat: ApiCategory) => cat.parentId === null)
+                  .map((category: ApiCategory) => (
                     <option key={category.id} value={category.id}>
                       سابكاتيجوري تحت: {category.name}
                     </option>
@@ -1385,8 +1400,8 @@ export default function SuperAdminDashboard() {
               <br />
               {(() => {
                 const subcategories = categories.filter(
-                  (cat: any) => cat.parentId === categoryToDelete?.id
-                ) as any[];
+                  (cat: ApiCategory) => cat.parentId === categoryToDelete?.id
+                );
                 return subcategories.length > 0 ? (
                   <>
                     <span className="text-orange-600 font-medium">

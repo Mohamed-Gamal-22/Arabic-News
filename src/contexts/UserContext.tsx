@@ -82,7 +82,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               fullName: session.user.name || "",
               imageUrl: null,
               roles: [],
-              categoryIds: sessionCategoryIds || (sessionCategories?.map((cat: any) => cat.id) || []),
+              categoryIds: sessionCategoryIds || (sessionCategories?.map((cat: { id: number }) => cat.id) || []),
               categories: sessionCategories || [],
             };
             setUserData(fallbackUserData);

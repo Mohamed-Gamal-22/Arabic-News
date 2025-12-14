@@ -64,7 +64,7 @@ export default function SignInPage() {
       } else {
         setError("حدث خطأ في تسجيل الدخول");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("خطأ في تسجيل الدخول:", error);
       setError("حدث خطأ في تسجيل الدخول");
     } finally {

@@ -102,7 +102,7 @@ export default function EditArticlePage({
           let categoryId = "";
           if (categoriesData && articleData.categoryName) {
             const currentCategory = categoriesData.find(
-              (cat: any) => cat.name === articleData.categoryName
+              (cat: { name: string }) => cat.name === articleData.categoryName
             );
             if (currentCategory) {
               categoryId = currentCategory.id.toString();
@@ -344,7 +344,7 @@ export default function EditArticlePage({
                       <SelectValue placeholder="اختر القسم" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category: any) => (
+                      {categories.map((category: { id: number; name: string }) => (
                         <SelectItem
                           key={category.id}
                           value={category.id.toString()}
