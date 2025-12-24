@@ -317,7 +317,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 text-center arabic-heading">
-            مرحباً بكم في موقع الأخبار العربي
+            مرحباً بكم في موقع فوكس نيوز بالعربي
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 text-center arabic-text">
             نقدم لكم آخر الأخبار والتطورات من الوطن العربي والعالم

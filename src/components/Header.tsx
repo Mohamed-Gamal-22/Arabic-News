@@ -1,27 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useState } from "react";
 import { Category } from "@/lib/api";
-import { useSession } from "next-auth/react";
 
 interface HeaderProps {
   categories: Category[];
 }
 
 export default function Header({ categories }: HeaderProps) {
-  const { data: session } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // إذا كان المستخدم مسجل دخول، لا نعرض النافبار
-  if (isClient && session) {
-    return null;
-  }
 
   // تنظيم التصنيفات إلى رئيسية وفرعية
   const mainCategories = categories.filter((cat) => !cat.parentId || cat.parentId === null);
@@ -38,21 +27,24 @@ export default function Header({ categories }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-lg border-b border-gray-200 dark:border-gray-700">
+    <header className="bg-white dark:bg-gray-900 shadow-lg border-b border-gray-200 dark:border-gray-700 pb-2">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* الشعار */}
           <div className="flex items-center">
             <Link
               href="/"
-              className="flex items-center space-x-2 space-x-reverse"
+              className="flex items-center"
             >
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">أ</span>
+              <div className="w-48 h-48 flex items-center justify-center mb-2">
+                <Image
+                  src="/logo.png"
+                  alt="موقع الأخبار العربية"
+                  width={192}
+                  height={192}
+                  className="object-contain"
+                />
               </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
-                موقع الأخبار العربية
-              </span>
             </Link>
           </div>
 

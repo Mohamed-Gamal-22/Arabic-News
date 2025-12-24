@@ -222,11 +222,6 @@ export default function WriterDashboard() {
                 <Button asChild>
                   <Link href="/dashboard/writer/create">إنشاء مقالة جديدة</Link>
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/dashboard/writer/articles">
-                    عرض جميع المقالات
-                  </Link>
-                </Button>
               </div>
             </CardContent>
           </Card>
