@@ -7,7 +7,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { ApiUser } from "@/lib/api";
 
 interface UserContextType {
@@ -68,6 +68,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.log("Users/{id} endpoint response ok:", response.ok);
 
       if (!response.ok) {
+        if (response.status === 401) {
+          console.warn(
+            "⚠️ User API returned 401 — token expired or invalid; clearing session."
+          );
+          setUserData(null);
+          setError(null);
+          setLoading(false);
+          await signOut({ redirect: false });
+          return;
+        }
         if (response.status === 403) {
           console.warn(
             "⚠️ Endpoint returned 403 - user may not have permission"

@@ -18,6 +18,7 @@ import LogoutButton from "@/components/LogoutButton";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import { getArticleById } from "@/lib/api";
 import { ApiArticle } from "@/lib/api";
+import { convertVideoLinksToEmbeds } from "@/lib/utils";
 
 export default function ArticleDetails({
   params,
@@ -174,7 +175,9 @@ export default function ArticleDetails({
                     </h3>
                     <div
                       className="text-gray-700 dark:text-gray-300 arabic-text prose max-w-none"
-                      dangerouslySetInnerHTML={{ __html: article.content }}
+                      dangerouslySetInnerHTML={{
+                      __html: convertVideoLinksToEmbeds(article.content),
+                    }}
                     />
                   </div>
                   {article.keywords && (

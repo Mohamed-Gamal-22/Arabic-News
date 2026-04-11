@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { convertVideoLinksToEmbeds } from "@/lib/utils";
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // import {
 //   faSave,
@@ -195,8 +196,10 @@ export default function CreateArticleForm() {
 
               {previewMode ? (
                 <div
-                  className="border rounded-lg p-4 min-h-[400px] bg-white dark:bg-gray-800 arabic-text"
-                  dangerouslySetInnerHTML={{ __html: content || "" }}
+                  className="article-content border rounded-lg p-4 min-h-[400px] bg-white dark:bg-gray-800 arabic-text"
+                  dangerouslySetInnerHTML={{
+                    __html: convertVideoLinksToEmbeds(content || ""),
+                  }}
                 />
               ) : (
                 <TinyMCEEditor

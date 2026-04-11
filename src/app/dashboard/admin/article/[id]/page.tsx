@@ -23,6 +23,7 @@ import Link from "next/link";
 import { AlertModal } from "@/components/ui/alert-modal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { convertVideoLinksToEmbeds } from "@/lib/utils";
 
 export default function ReviewArticle({
   params,
@@ -313,7 +314,9 @@ export default function ReviewArticle({
                     </h3>
                     <div
                       className="text-gray-700 dark:text-gray-300 arabic-text prose max-w-none"
-                      dangerouslySetInnerHTML={{ __html: article.content }}
+                      dangerouslySetInnerHTML={{
+                        __html: convertVideoLinksToEmbeds(article.content),
+                      }}
                     />
                   </div>
                   {article.keywords && (

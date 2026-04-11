@@ -367,6 +367,29 @@ body {
   display: block;
 }
 
+/* تضمين تويتر / X — ليس بنسبة 16:9 */
+.video-responsive.video-responsive--tweet {
+  padding-bottom: 0;
+  height: auto;
+  min-height: 420px;
+  max-width: 550px;
+  margin-left: auto;
+  margin-right: auto;
+  background: transparent;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.video-responsive.video-responsive--tweet iframe {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  height: 500px;
+}
+
+.dark .video-responsive.video-responsive--tweet {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
 /* إخفاء أي روابط تحت أو بجانب الفيديو */
 .article-content .video-responsive + a,
 .article-content a + .video-responsive,

@@ -42,7 +42,8 @@ export default function TinyMCEEditor({
     const tooltips: Record<string, string> = {
       "ql-bold": "عريض - يجعل النص عريض",
       "ql-italic": "مائل - يجعل النص مائلاً",
-      "ql-link": "رابط - يضيف رابط",
+      "ql-link":
+        "رابط — يوتيوب، فيمو، منشور تويتر/إكس، أو أي رابط عادي (يفتح في تاب جديد)",
     };
 
     // إضافة tooltips للأزرار
