@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
+/** حد أقصى لصورة مضمّنة كـ base64 داخل HTML */
+const MAX_INLINE_IMAGE_BYTES = 2 * 1024 * 1024;
+
 interface TinyMCEEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -24,12 +27,10 @@ export default function TinyMCEEditor({
     setIsMounted(true);
   }, []);
 
-  // تحديث onChange ref عند تغييره
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // دالة لإضافة tooltips - مرة واحدة فقط
   const addTooltips = useCallback(() => {
     if (tooltipsAddedRef.current) return;
 
@@ -38,15 +39,15 @@ export default function TinyMCEEditor({
 
     tooltipsAddedRef.current = true;
 
-    // قاموس الترجمة العربية
     const tooltips: Record<string, string> = {
       "ql-bold": "عريض - يجعل النص عريض",
       "ql-italic": "مائل - يجعل النص مائلاً",
       "ql-link":
         "رابط — يوتيوب، فيمو، منشور تويتر/إكس، أو أي رابط عادي (يفتح في تاب جديد)",
+      "ql-image":
+        "صورة داخل المقال — ارفع صورة من جهازك (حتى 2 ميجابايت)",
     };
 
-    // إضافة tooltips للأزرار
     const buttons = toolbar.querySelectorAll("button");
     buttons.forEach((button) => {
       const buttonElement = button as HTMLElement;
@@ -54,17 +55,15 @@ export default function TinyMCEEditor({
 
       let tooltipText = "";
 
-      // للقوائم
       if (classList.includes("ql-list")) {
-        const value = buttonElement.getAttribute("value");
-        if (value === "ordered") {
-          tooltipText = "قائمة مرقمة - ينشئ قائمة مرقمة (1, 2, 3...)";
-        } else if (value === "bullet") {
+        const val = buttonElement.getAttribute("value");
+        if (val === "ordered") {
+          tooltipText =
+            "قائمة مرقمة - ينشئ قائمة مرقمة (1, 2, 3...)";
+        } else if (val === "bullet") {
           tooltipText = "قائمة نقطية - ينشئ قائمة نقطية (• • •)";
         }
-      }
-      // للأدوات الأخرى
-      else {
+      } else {
         for (const [key, tooltip] of Object.entries(tooltips)) {
           if (classList.includes(key)) {
             tooltipText = tooltip;
@@ -79,7 +78,6 @@ export default function TinyMCEEditor({
       }
     });
 
-    // إضافة tooltips للـ pickers
     const pickers = toolbar.querySelectorAll(".ql-picker");
     pickers.forEach((picker) => {
       const pickerElement = picker as HTMLElement;
@@ -115,44 +113,73 @@ export default function TinyMCEEditor({
   useEffect(() => {
     if (!isMounted || !editorRef.current || quillRef.current) return;
 
-    // تحميل Quill بشكل ديناميكي فقط في الـ client side
     const loadQuill = async () => {
       try {
         const Quill = (await import("quill")).default;
         // @ts-expect-error - CSS import doesn't have type declarations
         await import("quill/dist/quill.snow.css");
 
-        // إنشاء محرر Quill
         const quill = new Quill(editorRef.current!, {
           theme: "snow",
           placeholder: placeholder,
           modules: {
-            toolbar: [
-              [{ header: [1, 2, 3, false] }],
-              ["bold", "italic"],
-              [{ color: [] }, { background: [] }],
-              [{ list: "ordered" }, { list: "bullet" }],
-              ["link"],
-            ],
+            toolbar: {
+              container: [
+                [{ header: [1, 2, 3, false] }],
+                ["bold", "italic"],
+                [{ color: [] }, { background: [] }],
+                [{ list: "ordered" }, { list: "bullet" }],
+                ["link", "image"],
+              ],
+              handlers: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                image: function (this: any) {
+                  const q = this.quill;
+                  const input = document.createElement("input");
+                  input.setAttribute("type", "file");
+                  input.setAttribute(
+                    "accept",
+                    "image/jpeg,image/png,image/webp,image/gif"
+                  );
+                  input.click();
+                  input.onchange = () => {
+                    const file = input.files?.[0];
+                    if (!file) return;
+                    if (file.size > MAX_INLINE_IMAGE_BYTES) {
+                      window.alert(
+                        `حجم الصورة يجب ألا يتجاوز ${MAX_INLINE_IMAGE_BYTES / (1024 * 1024)} ميجابايت.`
+                      );
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target?.result;
+                      if (typeof dataUrl !== "string") return;
+                      const range = q.getSelection(true);
+                      const idx = range ? range.index : q.getLength();
+                      q.insertEmbed(idx, "image", dataUrl, "user");
+                      q.setSelection(idx + 1, 0, "silent");
+                    };
+                    reader.readAsDataURL(file);
+                  };
+                },
+              },
+            },
           },
         });
 
-        // تعيين المحتوى الأولي
         if (value) {
           quill.root.innerHTML = value;
         }
 
-        // إعداد RTL للعربية
         const editorElement = quill.root;
         editorElement.setAttribute("dir", "rtl");
         editorElement.style.textAlign = "right";
 
-        // إضافة tooltips بعد تحميل المحرر - مرة واحدة فقط
         setTimeout(() => {
           addTooltips();
         }, 300);
 
-        // الاستماع للتغييرات
         quill.on("text-change", () => {
           const content = quill.root.innerHTML;
           onChangeRef.current(content);
@@ -176,7 +203,6 @@ export default function TinyMCEEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, placeholder, addTooltips]);
 
-  // تحديث المحتوى عند تغيير value من الخارج
   useEffect(() => {
     if (quillRef.current && value !== quillRef.current.root.innerHTML) {
       quillRef.current.root.innerHTML = value;

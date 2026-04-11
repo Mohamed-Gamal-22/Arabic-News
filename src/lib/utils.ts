@@ -41,6 +41,71 @@ function createTwitterEmbed(tweetId: string): string {
   return `<div class="video-responsive video-responsive--tweet"><iframe src="${src}" frameborder="0" allowfullscreen loading="lazy" title="منشور تويتر"></iframe></div>`;
 }
 
+/** فك كيانات HTML في href كما يفعل المتصفح */
+function decodeHtmlEntitiesInUrl(url: string): string {
+  return url
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+/** نص ظاهر من محتوى داخل <a> قد يحتوي <strong> وغيره */
+function innerHtmlToPlainLabel(inner: string): string {
+  return inner
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** رابط https يُعتبر صورة قابلة للعرض في <img src> */
+function isDirectImageFileUrl(url: string): boolean {
+  const raw = decodeHtmlEntitiesInUrl(url).trim();
+  if (!/^https?:\/\//i.test(raw)) return false;
+
+  const pathOnly = raw.split(/[?#]/)[0] ?? "";
+  if (/\.(jpe?g|png|gif|webp|svg|bmp|ico)(\/)?$/i.test(pathOnly)) return true;
+
+  if (/[?&](fm|format|type)=(jpe?g|png|gif|webp)/i.test(raw)) return true;
+
+  if (
+    /[?&]w=\d+/i.test(raw) &&
+    /[?&]h=\d+/i.test(raw) &&
+    /googleusercontent|ggpht|gstatic/i.test(raw)
+  )
+    return true;
+
+  if (
+    /^https?:\/\/i\.imgur\.com\/[a-zA-Z0-9]{4,}(\.[a-z0-9]{2,5})?(\?|$|#)/i.test(
+      raw
+    )
+  )
+    return true;
+  if (/pbs\.twimg\.com\/media\//i.test(raw)) return true;
+  if (/images\.unsplash\.com|unsplash\.com\/photos\//i.test(raw)) return true;
+  if (/picsum\.photos\/\d/i.test(raw)) return true;
+
+  return false;
+}
+
+function escapeHtmlAttr(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function anchorImageLinkToFigure(url: string, linkLabel: string): string {
+  const decoded = decodeHtmlEntitiesInUrl(url);
+  const alt = linkLabel.trim() || "صورة";
+  const safeSrc = escapeHtmlAttr(decoded);
+  const safeAlt = escapeHtmlAttr(alt);
+  return `<p class="article-inline-image-wrap"><img src="${safeSrc}" alt="${safeAlt}" class="article-content-inline-img" loading="lazy" decoding="async" /></p>`;
+}
+
 /** يضيف target و rel للروابط الخارجية إن لم تكن موجودة */
 function ensureExternalLinkAttrs(html: string): string {
   return html.replace(
@@ -70,10 +135,21 @@ export function convertVideoLinksToEmbeds(html: string): string {
     }
   );
 
-  // 1) روابط داخل <a href="..."> — نحوّل فقط يوتيوب / فيمو / تويتر؛ الباقي يبقى رابطاً عادياً
+  // 1) روابط داخل <a href="..."> — يدعم محتوى متداخل (<strong>…)؛ صورة ثم فيديو
   html = html.replace(
-    /<a\s+[^>]*href=["']([^"']+)["'][^>]*>([^<]*)<\/a>/gi,
-    (match, url: string, _inner: string) => {
+    /<a\s+[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,
+    (match, url: string, inner: string) => {
+      const label = innerHtmlToPlainLabel(inner);
+
+      if (
+        isDirectImageFileUrl(url) &&
+        !extractYouTubeId(url) &&
+        !extractVimeoId(url) &&
+        !extractTwitterTweetId(url)
+      ) {
+        return anchorImageLinkToFigure(url, label);
+      }
+
       const youtubeId = extractYouTubeId(url);
       if (youtubeId) return createYouTubeEmbed(youtubeId);
 
@@ -107,6 +183,15 @@ export function convertVideoLinksToEmbeds(html: string): string {
 
       const tweetId = extractTwitterTweetId(match);
       if (tweetId) return createTwitterEmbed(tweetId);
+
+      if (
+        isDirectImageFileUrl(match) &&
+        !extractYouTubeId(match) &&
+        !extractVimeoId(match) &&
+        !extractTwitterTweetId(match)
+      ) {
+        return anchorImageLinkToFigure(match, "");
+      }
 
       return match;
     }

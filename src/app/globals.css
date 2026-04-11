@@ -271,6 +271,19 @@ body {
   margin: 1rem 0;
 }
 
+/* صورة ناتجة عن رابط على كلمة (يُحوَّل من href إلى img عند العرض) */
+.article-content .article-inline-image-wrap {
+  margin: 1.25rem 0;
+  text-align: center;
+}
+
+.article-content img.article-content-inline-img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
 /* تحسينات للعناوين إذا كانت موجودة */
 .article-content h1,
 .article-content h2,
@@ -390,61 +403,7 @@ body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-/* إخفاء أي روابط تحت أو بجانب الفيديو */
-.article-content .video-responsive + a,
-.article-content a + .video-responsive,
-.article-content p:has(+ .video-responsive) a,
-.article-content p:has(.video-responsive) a,
-.article-content .video-responsive ~ a,
-.article-content .video-responsive + p a,
-.article-content .video-responsive ~ p a,
-.article-content .video-responsive + * a {
-  display: none !important;
-}
-
-/* إزالة أي روابط داخل نفس السطر مع الفيديو */
-.article-content p:has(.video-responsive) a,
-.article-content p:has(.video-responsive) {
-  text-align: center;
-}
-
-.article-content p:has(.video-responsive) a {
-  display: none !important;
-}
-
-/* إخفاء أي نص أو روابط قبل أو بعد الفيديو مباشرة */
-.article-content .video-responsive + *:not(.video-responsive) {
-  margin-top: 0;
-  display: none !important;
-}
-
-.article-content *:has(+ .video-responsive) a {
-  display: none !important;
-}
-
-/* إخفاء أي عناصر تحتوي على rel="noopener noreferrer" أو target="_blank" بعد الفيديو */
-.article-content .video-responsive ~ *:has([rel*="noopener"]),
-.article-content .video-responsive ~ *:has([target="_blank"]),
-.article-content .video-responsive + *:has([rel*="noopener"]),
-.article-content .video-responsive + *:has([target="_blank"]) {
-  display: none !important;
-}
-
-/* إخفاء أي عناصر تظهر مباشرة بعد الفيديو (لإزالة الروابط والنصوص غير المرغوبة) */
-.article-content .video-responsive + p,
-.article-content .video-responsive + div:not(.video-responsive),
-.article-content .video-responsive + span,
-.article-content .video-responsive + a,
-.article-content .video-responsive ~ p,
-.article-content .video-responsive ~ div:not(.video-responsive),
-.article-content .video-responsive ~ span {
-  display: none !important;
-}
-
-/* إخفاء أي نص يظهر مباشرة بعد الفيديو */
-.article-content .video-responsive + * {
-  display: none !important;
-}
+/* لا نخفي المحتوى بعد الفيديو — كان يخفي النص والصور المضمّنة في صفحة الخبر */
 
 /* تحسينات للفيديو في الوضع الداكن */
 .dark .video-responsive {
