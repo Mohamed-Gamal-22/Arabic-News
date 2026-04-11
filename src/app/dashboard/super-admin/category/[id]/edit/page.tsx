@@ -80,7 +80,7 @@ export default function EditCategoryPage({
         const categoryId = parseInt(resolvedParams.id);
 
         if (isNaN(categoryId)) {
-          setError("رقم التصنيف غير صحيح");
+          setError("رقم القسم غير صحيح");
           setLoading(false);
           return;
         }
@@ -100,7 +100,7 @@ export default function EditCategoryPage({
             parentId: categoryData.parentId || null,
           });
         } else {
-          setError("التصنيف غير موجود");
+          setError("القسم غير موجود");
         }
 
         if (categoriesData) {
@@ -109,7 +109,7 @@ export default function EditCategoryPage({
       } catch (err: unknown) {
         console.error("Error fetching category:", err);
         setError(
-          err instanceof Error ? err.message : "حدث خطأ في جلب بيانات التصنيف"
+          err instanceof Error ? err.message : "حدث خطأ في جلب بيانات القسم"
         );
       } finally {
         setLoading(false);
@@ -136,12 +136,12 @@ export default function EditCategoryPage({
       const categoryId = parseInt(resolvedParams.id);
 
       if (isNaN(categoryId)) {
-        throw new Error("رقم التصنيف غير صحيح");
+        throw new Error("رقم القسم غير صحيح");
       }
 
       // التحقق من البيانات
       if (!formData.name.trim()) {
-        throw new Error("اسم التصنيف مطلوب");
+        throw new Error("اسم القسم مطلوب");
       }
 
       if (!formData.slug.trim()) {
@@ -170,14 +170,14 @@ export default function EditCategoryPage({
       // تحديث التصنيف
       await updateCategory(token, categoryId, updateData);
 
-      setSuccessMessage("تم تحديث التصنيف بنجاح");
+      setSuccessMessage("تم تحديث القسم بنجاح");
       setShowSuccessModal(true);
     } catch (err: unknown) {
       console.error("Error updating category:", err);
       setErrorMessage(
         err instanceof Error
           ? err.message
-          : "حدث خطأ أثناء تحديث التصنيف. يرجى المحاولة مرة أخرى."
+          : "حدث خطأ أثناء تحديث القسم. يرجى المحاولة مرة أخرى."
       );
       setShowErrorModal(true);
     } finally {
@@ -244,7 +244,7 @@ export default function EditCategoryPage({
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2 space-x-reverse">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white arabic-heading">
-                تعديل التصنيف
+                تعديل القسم
               </h1>
             </div>
             <LogoutButton />
@@ -259,17 +259,17 @@ export default function EditCategoryPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="arabic-heading">تعديل التصنيف</CardTitle>
+            <CardTitle className="arabic-heading">تعديل القسم</CardTitle>
             <CardDescription className="arabic-text">
-              قم بتعديل بيانات التصنيف
+              قم بتعديل بيانات القسم
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* اسم التصنيف */}
+              {/* اسم القسم */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="arabic-text">
-                  اسم التصنيف *
+                  اسم القسم *
                 </Label>
                 <Input
                   id="name"
@@ -277,7 +277,7 @@ export default function EditCategoryPage({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="أدخل اسم التصنيف"
+                  placeholder="أدخل اسم القسم"
                   className="arabic-text"
                   required
                 />
@@ -314,15 +314,15 @@ export default function EditCategoryPage({
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="أدخل وصف التصنيف (اختياري)"
+                  placeholder="أدخل وصف القسم (اختياري)"
                   className="arabic-text min-h-[100px]"
                 />
               </div>
 
-              {/* التصنيف الرئيسي */}
+              {/* القسم الرئيسي */}
               <div className="space-y-2">
                 <Label htmlFor="parentId" className="arabic-text">
-                  التصنيف الرئيسي (اختياري)
+                  القسم الرئيسي (اختياري)
                 </Label>
                 <Select
                   value={
@@ -338,10 +338,10 @@ export default function EditCategoryPage({
                   }
                 >
                   <SelectTrigger className="arabic-text">
-                    <SelectValue placeholder="اختر تصنيف رئيسي" />
+                    <SelectValue placeholder="اختر قسمًا رئيسيًا" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">لا يوجد (تصنيف رئيسي)</SelectItem>
+                    <SelectItem value="none">لا يوجد (قسم رئيسي)</SelectItem>
                     {mainCategories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id.toString()}>
                         {cat.name}
@@ -350,7 +350,7 @@ export default function EditCategoryPage({
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-gray-500 dark:text-gray-400 arabic-text">
-                  إذا تركت هذا الحقل فارغاً، سيكون التصنيف تصنيفاً رئيسياً
+                  إذا تركت هذا الحقل فارغاً، سيكون القسم قسماً رئيسياً
                 </p>
               </div>
 

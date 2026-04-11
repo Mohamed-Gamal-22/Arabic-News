@@ -305,11 +305,11 @@ export default function UserDetailsPage() {
                 </div>
               </div>
 
-              {/* التصنيفات */}
+              {/* الأقسام */}
               {userData.categories && userData.categories.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 arabic-heading border-b pb-2">
-                    التصنيفات المرتبطة
+                    الأقسام المرتبطة
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {userData.categories.map(
@@ -330,11 +330,11 @@ export default function UserDetailsPage() {
                 </div>
               )}
 
-              {/* معرفات التصنيفات */}
+              {/* معرفات الأقسام */}
               {userData.categoryIds && userData.categoryIds.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 arabic-heading border-b pb-2">
-                    معرفات التصنيفات
+                    معرفات الأقسام
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {userData.categoryIds.map((categoryId: number) => (

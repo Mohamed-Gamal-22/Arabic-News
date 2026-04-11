@@ -430,14 +430,14 @@ export default function CategoryPage() {
       <section className="container mx-auto px-4 py-10">
         <div className="max-w-6xl mx-auto mb-8 text-center">
           <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2">
-            {category ? "جميع المقالات" : "البحث عن التصنيف"}
+            {category ? "جميع المقالات" : "البحث عن القسم"}
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white arabic-heading">
             {categoryName}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-3 arabic-text">
             {!category
-              ? "التصنيف المطلوب غير موجود في الموقع."
+              ? "القسم المطلوب غير موجود في الموقع."
               : loading
               ? "جاري التحميل..."
               : categoryArticles.length > 0
@@ -517,17 +517,17 @@ export default function CategoryPage() {
             <div className="space-y-4">
               <div className="text-6xl mb-4">📰</div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white arabic-heading">
-                {category ? "لا توجد مقالات" : "التصنيف غير موجود"}
+                {category ? "لا توجد مقالات" : "القسم غير موجود"}
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-400 arabic-text">
                 {category
                   ? `عذراً، لا توجد مقالات متاحة في قسم ${category.name} حالياً.`
-                  : `عذراً، التصنيف "${categoryName}" غير موجود في الموقع.`}
+                  : `عذراً، القسم "${categoryName}" غير موجود في الموقع.`}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-500 arabic-text">
                 {category
                   ? "تحقق مرة أخرى لاحقاً للاطلاع على المقالات الجديدة."
-                  : "يرجى التحقق من رابط التصنيف أو تصفح التصنيفات المتاحة من القائمة الرئيسية."}
+                  : "يرجى التحقق من رابط القسم أو تصفح الأقسام المتاحة من القائمة الرئيسية."}
               </p>
             </div>
           </div>

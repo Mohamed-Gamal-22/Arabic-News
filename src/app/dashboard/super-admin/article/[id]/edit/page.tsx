@@ -34,6 +34,7 @@ import { AlertCircle } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import BackToDashboardButton from "@/components/BackToDashboardButton";
 import { getArticleById, updateArticle } from "@/lib/api";
+import { approveArticleUnpend } from "@/lib/articles";
 import { getCategoriesWithToken, ApiCategory } from "@/lib/superAdminApi";
 
 export default function EditArticlePage({
@@ -53,6 +54,7 @@ export default function EditArticlePage({
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [wasPublished, setWasPublished] = useState(false);
+  const [initialIsTrending, setInitialIsTrending] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
   const [formData, setFormData] = useState({
@@ -96,6 +98,7 @@ export default function EditArticlePage({
           // فحص إذا كانت المقالة منشورة (IsPending=false يعني منشورة)
           // نفترض أن المقالة منشورة إذا كان لها publishedAt
           setWasPublished(!!articleData.publishedAt);
+          setInitialIsTrending(!!articleData.isTrending);
 
           // تحديد CategoryId الحالي
           let categoryId = "";
@@ -187,11 +190,31 @@ export default function EditArticlePage({
 
       await updateArticle(articleId.toString(), updateData, token);
 
-      // تحديد رسالة النجاح بناءً على حالة المقالة
       if (wasPublished) {
-        setSuccessMessage(
-          "تم حفظ التعديلات بنجاح! ✅ المقالة الآن تحت المراجعة وتحتاج موافقة جديدة للنشر."
-        );
+        const categoryIdNum = parseInt(formData.CategoryId, 10);
+        try {
+          await approveArticleUnpend(
+            articleId,
+            {
+              Title: updateData.Title,
+              Content: updateData.Content,
+              Summary: updateData.Summary,
+              Slug: updateData.Slug,
+              CategoryId: categoryIdNum,
+              IsTrending: initialIsTrending,
+              TrendPeriodInDays: initialIsTrending ? 7 : 1,
+              IsPending: false,
+            },
+            token
+          );
+          setSuccessMessage(
+            "تم حفظ التعديلات بنجاح. المقالة ما زالت منشورة."
+          );
+        } catch {
+          setSuccessMessage(
+            "تم حفظ التعديلات، لكن تعذر تأكيد بقاء المقالة منشورة تلقائياً. قد تكون الآن في انتظار المراجعة—تحقق من تبويب المقالات تحت المراجعة."
+          );
+        }
       } else {
         setSuccessMessage("تم تعديل المقال بنجاح");
       }
@@ -250,14 +273,14 @@ export default function EditArticlePage({
           <>
             {/* تحذير للمقالات المنشورة */}
             {wasPublished && (
-              <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
-                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-                <AlertTitle className="arabic-heading text-yellow-800 dark:text-yellow-500 font-bold">
-                  ⚠️ تحذير: مقالة منشورة
+              <Alert className="mb-6 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800">
+                <AlertCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-500" />
+                <AlertTitle className="arabic-heading text-emerald-800 dark:text-emerald-400 font-bold">
+                  مقالة منشورة
                 </AlertTitle>
-                <AlertDescription className="arabic-text text-yellow-700 dark:text-yellow-400 mt-2">
-                  هذه المقالة منشورة حالياً. أي تعديل سيتم عليها سيرجعها
-                  تلقائياً إلى حالة المراجعة وتحتاج موافقة جديدة للنشر.
+                <AlertDescription className="arabic-text text-emerald-700 dark:text-emerald-300 mt-2">
+                  بعد الحفظ يُحدَّث المحتوى ويبقى المقال منشوراً دون إعادته
+                  لتبويب المقالات تحت المراجعة.
                 </AlertDescription>
               </Alert>
             )}

@@ -21,6 +21,11 @@ type ArticleApprovalModalProps = {
     TrendPeriodInDays: number;
   }) => Promise<void>;
   loading?: boolean;
+  /** نصوص اختيارية لإعادة استخدام النافذة خارج «موافقة المقال» */
+  title?: string;
+  description?: string;
+  trendingLabel?: string;
+  confirmLabel?: string;
 };
 
 export default function ArticleApprovalModal({
@@ -28,6 +33,10 @@ export default function ArticleApprovalModal({
   onOpenChange,
   onApprove,
   loading = false,
+  title = "موافقة على المقال",
+  description = "حدد إعدادات الموافقة على المقال",
+  trendingLabel = "جعل المقال تريندينج",
+  confirmLabel = "موافق",
 }: ArticleApprovalModalProps) {
   const [isTrending, setIsTrending] = useState(false);
   const [trendPeriodInDays, setTrendPeriodInDays] = useState(1);
@@ -69,11 +78,9 @@ export default function ArticleApprovalModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="arabic-text max-w-md">
         <DialogHeader>
-          <DialogTitle className="arabic-heading text-right">
-            موافقة على المقال
-          </DialogTitle>
+          <DialogTitle className="arabic-heading text-right">{title}</DialogTitle>
           <DialogDescription className="arabic-text text-right">
-            حدد إعدادات الموافقة على المقال
+            {description}
           </DialogDescription>
         </DialogHeader>
 
@@ -92,7 +99,7 @@ export default function ArticleApprovalModal({
               htmlFor="isTrending"
               className="text-sm font-medium text-gray-700 cursor-pointer arabic-text"
             >
-              جعل المقال تريندينج
+              {trendingLabel}
             </Label>
           </div>
 
@@ -143,7 +150,7 @@ export default function ArticleApprovalModal({
               disabled={loading}
               className="bg-green-600 hover:bg-green-700"
             >
-              {loading ? "جاري المعالجة..." : "موافق"}
+              {loading ? "جاري المعالجة..." : confirmLabel}
             </Button>
           </DialogFooter>
         </form>

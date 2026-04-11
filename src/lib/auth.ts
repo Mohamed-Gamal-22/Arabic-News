@@ -211,7 +211,7 @@ export const authOptions = {
     error: "/auth/error",
   },
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
     maxAge: 24 * 60 * 60, // 24 ساعة
   },
   secret: process.env.NEXTAUTH_SECRET,

@@ -427,3 +427,20 @@ body {
 .dark .video-responsive {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
 }
+
+/*
+ * مسافة بسيطة بين زرّين متجاورين (مكوّن Button / data-slot="button")
+ * عندما لا يُعرَّف gap أو space-x على الحاوية، حتى لا تلتصق الأزرار.
+ * إن وُجد gap أو space-x يُفضَّل الاعتماد عليه دون تكرار المسافة.
+ */
+@layer components {
+  .flex:not([class*="gap-"]):not([class*="space-x"]):has(
+      > [data-slot="button"] ~ [data-slot="button"]
+    ),
+  .inline-flex:not([class*="gap-"]):not([class*="space-x"]):has(
+      > [data-slot="button"] ~ [data-slot="button"]
+    ),
+  .grid:not([class*="gap-"]):has(> [data-slot="button"] ~ [data-slot="button"]) {
+    gap: 0.5rem;
+  }
+}

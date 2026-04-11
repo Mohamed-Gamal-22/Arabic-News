@@ -111,7 +111,7 @@ export default function ReviewArticle({
       );
 
       if (!currentCategory) {
-        throw new Error("لم يتم العثور على التصنيف");
+        throw new Error("لم يتم العثور على القسم");
       }
 
       const approveData = {
@@ -258,7 +258,8 @@ export default function ReviewArticle({
                   ✅ مقالة منشورة
                 </AlertTitle>
                 <AlertDescription className="arabic-text text-green-700 dark:text-green-400 mt-2">
-                  هذه المقالة منشورة حالياً. يمكنك تعديلها ولكن ستحتاج موافقة جديدة للنشر.
+                  هذه المقالة منشورة حالياً. من صفحة التعديل يُحدَّث المحتوى ويبقى
+                  المقال منشوراً دون إعادته لتبويب المقالات تحت المراجعة.
                 </AlertDescription>
               </Alert>
             )}
@@ -338,7 +339,7 @@ export default function ReviewArticle({
               </LoadingButton>
               <LoadingButton asChild disabled={processing} className="bg-yellow-500 hover:bg-yellow-600 text-white">
                 <Link
-                  href={`/dashboard/super-admin/article/${article.id}/edit`}
+                  href={`/dashboard/super-admin/article/${article.id}/edit${cameFromApprovedTab ? "?tab=approved" : ""}`}
                 >
                   تعديل
                 </Link>

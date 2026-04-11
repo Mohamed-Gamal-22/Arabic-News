@@ -53,7 +53,7 @@ const createUserSchema = z.object({
     ),
   FullName: z.string().min(2, "الاسم الكامل يجب أن يكون على الأقل حرفين"),
   Role: z.string().min(1, "يجب اختيار دور"),
-  CategoryIds: z.array(z.number()).min(1, "يجب اختيار تصنيف واحد على الأقل"),
+  CategoryIds: z.array(z.number()).min(1, "يجب اختيار قسم واحد على الأقل"),
 });
 
 type CreateUserFormData = z.infer<typeof createUserSchema>;
@@ -331,10 +331,10 @@ export default function CreateUserPage() {
                 )}
               </div>
 
-              {/* التصنيفات */}
+              {/* الأقسام */}
               <div className="space-y-2">
                 <Label htmlFor="CategoryIds" className="arabic-text">
-                  التصنيفات *
+                  الأقسام *
                 </Label>
 
                 {/* عرض التصنيفات المختارة كـ Tags */}
@@ -390,7 +390,7 @@ export default function CreateUserPage() {
                 {/* عرض التصنيفات كـ Clickable Cards */}
                 {loadingCategories ? (
                   <div className="text-sm text-gray-500 arabic-text">
-                    جاري تحميل التصنيفات...
+                    جاري تحميل الأقسام...
                   </div>
                 ) : categories.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
@@ -478,7 +478,7 @@ export default function CreateUserPage() {
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 arabic-text border border-gray-300 rounded-lg p-4">
-                    لا توجد تصنيفات متاحة
+                    لا توجد أقسام متاحة
                   </div>
                 )}
                 {errors.CategoryIds && (

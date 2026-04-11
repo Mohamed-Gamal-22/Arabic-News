@@ -30,8 +30,52 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle } from "@/lib/api";
+import ArticleApprovalModal from "@/components/ArticleApprovalModal";
+import { createArticle, ApiArticle } from "@/lib/api";
+import { approveArticleUnpend } from "@/lib/articles";
 import { getCategoriesWithToken, ApiCategory } from "@/lib/superAdminApi";
+
+type FormState = {
+  title: string;
+  summary: string;
+  content: string;
+  slug: string;
+  categoryId: string;
+  keywords: string;
+};
+
+function validateCreateForm(
+  formData: FormState,
+  imageFile: File | null
+): string | null {
+  if (!formData.title?.trim()) return "العنوان مطلوب";
+  if (!formData.summary?.trim()) return "الملخص مطلوب";
+  if (!formData.content?.trim()) return "المحتوى مطلوب";
+  if (!formData.slug?.trim()) return "الرابط (Slug) مطلوب";
+  if (!formData.categoryId?.trim()) return "القسم مطلوب";
+  if (!imageFile) return "الصورة مطلوبة";
+  const categoryId = Number(formData.categoryId);
+  if (!categoryId || isNaN(categoryId)) return "يجب اختيار قسم للمقال";
+  return null;
+}
+
+function buildArticleFormData(
+  formData: FormState,
+  imageFile: File
+): { formDataToSend: FormData; categoryId: number } {
+  const categoryId = Number(formData.categoryId);
+  const formDataToSend = new FormData();
+  formDataToSend.append("Title", formData.title.trim());
+  formDataToSend.append("Content", formData.content || "");
+  formDataToSend.append("Summary", formData.summary.trim());
+  formDataToSend.append("Slug", formData.slug.trim());
+  formDataToSend.append("CategoryId", categoryId.toString());
+  formDataToSend.append("Image", imageFile);
+  if (formData.keywords?.trim()) {
+    formDataToSend.append("Keywords", formData.keywords.trim());
+  }
+  return { formDataToSend, categoryId };
+}
 
 export default function SuperAdminCreateArticlePage() {
   const router = useRouter();
@@ -42,8 +86,12 @@ export default function SuperAdminCreateArticlePage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState(
+    "تم إنشاء المقال بنجاح!"
+  );
+  const [showInstantModal, setShowInstantModal] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormState>({
     title: "",
     summary: "",
     content: "",
@@ -54,7 +102,6 @@ export default function SuperAdminCreateArticlePage() {
 
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // الكلمات المفتاحية المقترحة
   const suggestedKeywords = [
     "سياسة",
     "رياضة",
@@ -142,94 +189,30 @@ export default function SuperAdminCreateArticlePage() {
     setError(null);
 
     try {
-      // التحقق من وجود التوكن في الـ session
       if (!session?.accessToken) {
         setError("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
         setLoading(false);
         return;
       }
 
+      const validationError = validateCreateForm(formData, imageFile);
+      if (validationError) {
+        setErrorMessage(validationError);
+        setShowErrorModal(true);
+        setLoading(false);
+        return;
+      }
+
       const token = session.accessToken;
-
-      // التحقق من جميع الحقول المطلوبة
-      if (!formData.title || !formData.title.trim()) {
-        setErrorMessage("العنوان مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.summary || !formData.summary.trim()) {
-        setErrorMessage("الملخص مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.content || !formData.content.trim()) {
-        setErrorMessage("المحتوى مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.slug || !formData.slug.trim()) {
-        setErrorMessage("الرابط (Slug) مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.categoryId || !formData.categoryId.trim()) {
-        setErrorMessage("القسم مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!imageFile) {
-        setErrorMessage("الصورة مطلوبة");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      // إنشاء FormData مع الأسماء الصحيحة للـ API
-      const formDataToSend = new FormData();
-
-      // استخدام الأسماء الصحيحة حسب API .NET - CategoryId يجب أن يكون رقم (number)
-      const categoryId = formData.categoryId
-        ? Number(formData.categoryId)
-        : null;
-
-      if (!categoryId || isNaN(categoryId)) {
-        setErrorMessage("يجب اختيار قسم للمقال");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      formDataToSend.append("Title", formData.title);
-      formDataToSend.append("Content", formData.content || "");
-      formDataToSend.append("Summary", formData.summary || "");
-      formDataToSend.append("Slug", formData.slug);
-      formDataToSend.append("CategoryId", categoryId.toString());
-
-      console.log("CategoryId to send (as number):", categoryId);
-
-      if (imageFile) {
-        formDataToSend.append("Image", imageFile);
-      }
-
-      // إضافة Keywords كـ string مفصولة بفواصل
-      if (formData.keywords && formData.keywords.trim()) {
-        const keywordsString = formData.keywords.trim();
-        formDataToSend.append("Keywords", keywordsString);
-      }
+      const { formDataToSend } = buildArticleFormData(
+        formData,
+        imageFile as File
+      );
 
       const createdArticle = await createArticle(formDataToSend, token);
 
       if (createdArticle) {
+        setSuccessMessage("تم إنشاء المقال بنجاح!");
         setShowSuccessModal(true);
       }
     } catch (err: unknown) {
@@ -240,9 +223,84 @@ export default function SuperAdminCreateArticlePage() {
     }
   };
 
+  const handleOpenInstantModal = () => {
+    if (!session?.accessToken) {
+      setErrorMessage("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
+      setShowErrorModal(true);
+      return;
+    }
+    const validationError = validateCreateForm(formData, imageFile);
+    if (validationError) {
+      setErrorMessage(validationError);
+      setShowErrorModal(true);
+      return;
+    }
+    setShowInstantModal(true);
+  };
+
+  const handleInstantPublish = async (approvalData: {
+    IsTrending: boolean;
+    TrendPeriodInDays: number;
+  }) => {
+    if (!session?.accessToken || !imageFile) return;
+
+    const token = session.accessToken;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { formDataToSend, categoryId } = buildArticleFormData(
+        formData,
+        imageFile
+      );
+
+      const createdArticle: ApiArticle | null = await createArticle(
+        formDataToSend,
+        token
+      );
+
+      if (!createdArticle?.id) {
+        throw new Error("لم يُرجع الخادم معرف المقال بعد الإنشاء");
+      }
+
+      try {
+        await approveArticleUnpend(
+          createdArticle.id,
+          {
+            Title: formData.title.trim(),
+            Content: formData.content || "",
+            Summary: formData.summary.trim(),
+            Slug: formData.slug.trim(),
+            CategoryId: categoryId,
+            IsTrending: approvalData.IsTrending,
+            TrendPeriodInDays: approvalData.IsTrending
+              ? approvalData.TrendPeriodInDays
+              : 1,
+            IsPending: false,
+          },
+          token
+        );
+        setSuccessMessage("تم إنشاء المقال ونشره فوراً!");
+        setShowInstantModal(false);
+        setShowSuccessModal(true);
+      } catch {
+        setSuccessMessage(
+          "تم إنشاء المقال، لكن تعذر نشره فوراً. قد يكون تحت المراجعة—تحقق من التبويب المناسب."
+        );
+        setShowInstantModal(false);
+        setShowSuccessModal(true);
+      }
+    } catch (err: unknown) {
+      throw err instanceof Error
+        ? err
+        : new Error("حدث خطأ في إنشاء المقال أو نشره");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* الهيدر */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -366,7 +424,6 @@ export default function SuperAdminCreateArticlePage() {
                   الكلمات المفتاحية
                 </Label>
 
-                {/* الكلمات المختارة */}
                 {selectedKeywords.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2 mb-3">
                     {selectedKeywords.map((keyword) => (
@@ -387,7 +444,6 @@ export default function SuperAdminCreateArticlePage() {
                   </div>
                 )}
 
-                {/* الكلمات المقترحة */}
                 <div className="mt-2 mb-3">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 arabic-text">
                     اختر من الكلمات المقترحة:
@@ -411,7 +467,6 @@ export default function SuperAdminCreateArticlePage() {
                   </div>
                 </div>
 
-                {/* إضافة كلمة مفتاحية مخصصة */}
                 <div className="flex gap-2">
                   <Input
                     type="text"
@@ -450,7 +505,7 @@ export default function SuperAdminCreateArticlePage() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-4 space-x-reverse">
+              <div className="flex flex-wrap justify-end gap-3 space-x-reverse">
                 <Button
                   type="button"
                   variant="outline"
@@ -458,6 +513,15 @@ export default function SuperAdminCreateArticlePage() {
                   disabled={loading}
                 >
                   إلغاء
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="bg-amber-600 text-white hover:bg-amber-700"
+                  onClick={handleOpenInstantModal}
+                  disabled={loading}
+                >
+                  إنشاء في الحال
                 </Button>
                 <Button type="submit" disabled={loading}>
                   {loading ? "جاري الإنشاء..." : "إنشاء المقال"}
@@ -468,7 +532,17 @@ export default function SuperAdminCreateArticlePage() {
         </Card>
       </main>
 
-      {/* Success Modal */}
+      <ArticleApprovalModal
+        open={showInstantModal}
+        onOpenChange={setShowInstantModal}
+        onApprove={handleInstantPublish}
+        loading={loading}
+        title="نشر فوري"
+        description="حدد إن كان المقال عاجلاً (ترند) وعدد أيام الترند، ثم يُنشَر مباشرة دون المراجعة."
+        trendingLabel="عاجل (ترند)"
+        confirmLabel="تأكيد النشر"
+      />
+
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>
@@ -477,7 +551,7 @@ export default function SuperAdminCreateArticlePage() {
               <span>تمام تم الإضافة</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
-              تم إنشاء المقال بنجاح!
+              {successMessage}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 space-x-reverse mt-4">
@@ -494,7 +568,6 @@ export default function SuperAdminCreateArticlePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Error Modal */}
       <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
         <DialogContent className="arabic-text">
           <DialogHeader>

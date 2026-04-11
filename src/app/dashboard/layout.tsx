@@ -1,19 +1,9 @@
-import AuthProvider from "@/components/AuthProvider";
-import Header from "@/components/Header";
-import { getCategoriesServer } from "@/lib/categories";
-
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // جلب التصنيفات في الـ server
-  const categories = await getCategoriesServer();
-
-  return (
-    <AuthProvider>
-      <Header categories={categories} />
-      <main>{children}</main>
-    </AuthProvider>
-  );
+  // الهيدر و SessionProvider موجودان في الجذر (src/app/layout.tsx)؛
+  // تكرارهما هنا كان يسبب SessionProvider متداخلة وأخطاء بعد تسجيل الخروج.
+  return children;
 }

@@ -480,10 +480,10 @@ export default function EditUserPage() {
                 )}
               </div>
 
-              {/* التصنيفات */}
+              {/* الأقسام */}
               <div className="space-y-2">
                 <Label htmlFor="CategoryIds" className="arabic-text">
-                  التصنيفات *
+                  الأقسام *
                 </Label>
 
                 {/* عرض التصنيفات المختارة كـ Tags */}
@@ -539,7 +539,7 @@ export default function EditUserPage() {
                 {/* عرض التصنيفات كـ Clickable Cards */}
                 {loadingCategories ? (
                   <div className="text-sm text-gray-500 arabic-text">
-                    جاري تحميل التصنيفات...
+                    جاري تحميل الأقسام...
                   </div>
                 ) : categories.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
@@ -627,7 +627,7 @@ export default function EditUserPage() {
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500 arabic-text border border-gray-300 rounded-lg p-4">
-                    لا توجد تصنيفات متاحة
+                    لا توجد أقسام متاحة
                   </div>
                 )}
                 {errors.CategoryIds && (

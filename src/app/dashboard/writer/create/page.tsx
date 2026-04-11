@@ -455,8 +455,8 @@ export default function CreateArticlePage() {
                   </Select>
                 ) : (
                   <div className="mt-1 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 arabic-text">
-                    ⚠️ لا توجد تصنيفات متاحة. يرجى التواصل مع المدير لتعيين
-                    التصنيفات المسموحة لك.
+                    ⚠️ لا توجد أقسام متاحة. يرجى التواصل مع المدير لتعيين
+                    الأقسام المسموحة لك.
                   </div>
                 )}
               </div>
@@ -550,7 +550,7 @@ export default function CreateArticlePage() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-4 space-x-reverse">
+              <div className="flex flex-wrap justify-end gap-3">
                 <LoadingButton
                   type="button"
                   variant="outline"

@@ -157,7 +157,7 @@ export default function AdminCreateArticlePage() {
       } catch (err: unknown) {
         console.error("❌ Error fetching categories:", err);
         setCategories([]);
-        setError("حدث خطأ في جلب التصنيفات. يرجى المحاولة مرة أخرى.");
+        setError("حدث خطأ في جلب الأقسام. يرجى المحاولة مرة أخرى.");
       }
     };
 
@@ -290,7 +290,7 @@ export default function AdminCreateArticlePage() {
         allowedCategoryIds.length > 0 &&
         !allowedCategoryIds.includes(categoryId)
       ) {
-        setErrorMessage("لا يمكن إضافة مقال خارج التصنيفات المسموح بها لك");
+        setErrorMessage("لا يمكن إضافة مقال خارج الأقسام المسموح بها لك");
         setShowErrorModal(true);
         setLoading(false);
         return;
@@ -535,7 +535,7 @@ export default function AdminCreateArticlePage() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-4 space-x-reverse">
+              <div className="flex flex-wrap justify-end gap-3">
                 <Button
                   type="button"
                   variant="outline"

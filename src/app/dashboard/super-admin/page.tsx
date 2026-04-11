@@ -449,17 +449,17 @@ function SuperAdminDashboardContent() {
       for (const subcategory of subcategories) {
         try {
           await deleteCategory(session.accessToken, subcategory.id);
-          console.log(`تم حذف السابكاتيجوري: ${subcategory.name}`);
+          console.log(`تم حذف القسم الفرعي: ${subcategory.name}`);
         } catch (subError: unknown) {
           console.error(
-            `خطأ في حذف السابكاتيجوري ${subcategory.name}:`,
+            `خطأ في حذف القسم الفرعي ${subcategory.name}:`,
             subError
           );
-          // نكمل الحذف حتى لو فشل حذف سابكاتيجوري واحد
+          // نكمل الحذف حتى لو فشل حذف قسم فرعي واحد
         }
       }
 
-      // حذف الكاتيجوري الرئيسي بعد حذف السابكاتيجوريز
+      // حذف القسم الرئيسي بعد حذف الأقسام الفرعية
       await deleteCategory(session.accessToken, categoryToDelete.id);
 
       // إعادة جلب البيانات لتحديث القائمة
@@ -473,19 +473,19 @@ function SuperAdminDashboardContent() {
       const deletedCount = subcategories.length;
       const message =
         deletedCount > 0
-          ? `تم حذف الكاتيجوري "${categoryToDelete.name}" و ${deletedCount} سابكاتيجوري بنجاح!`
-          : `تم حذف الكاتيجوري "${categoryToDelete.name}" بنجاح!`;
+          ? `تم حذف القسم "${categoryToDelete.name}" و ${deletedCount} قسمًا فرعيًا بنجاح!`
+          : `تم حذف القسم "${categoryToDelete.name}" بنجاح!`;
 
       setDeleteResultMessage(message);
       setDeleteResultType("success");
       setShowDeleteResultModal(true);
     } catch (error: unknown) {
-      console.error("خطأ في حذف الكاتيجوري:", error);
+      console.error("خطأ في حذف القسم:", error);
 
       // إغلاق Modal الحذف وعرض Modal الخطأ
       setShowDeleteCategoryModal(false);
       setCategoryToDelete(null);
-      setDeleteResultMessage((error instanceof Error ? error.message : "حدث خطأ في حذف الكاتيجوري"));
+      setDeleteResultMessage((error instanceof Error ? error.message : "حدث خطأ في حذف القسم"));
       setDeleteResultType("error");
       setShowDeleteResultModal(true);
     } finally {
@@ -517,7 +517,7 @@ function SuperAdminDashboardContent() {
         description: newCategoryData.Description || null,
         parentId: newCategoryData.ParentId,
       });
-      setCategoryResultMessage("تم إنشاء الكاتيجوري بنجاح!");
+      setCategoryResultMessage("تم إنشاء القسم بنجاح!");
       setCategoryResultType("success");
 
       // إعادة جلب جميع التصنيفات بعد الإضافة
@@ -538,8 +538,8 @@ function SuperAdminDashboardContent() {
       setShowCreateCategoryModal(false);
       setShowCategoryResultModal(true);
     } catch (error: unknown) {
-      console.error("خطأ في إنشاء الكاتيجوري:", error);
-      setCategoryResultMessage((error instanceof Error ? error.message : "حدث خطأ في إنشاء الكاتيجوري"));
+      console.error("خطأ في إنشاء القسم:", error);
+      setCategoryResultMessage((error instanceof Error ? error.message : "حدث خطأ في إنشاء القسم"));
       setCategoryResultType("error");
 
       // إغلاق Modal الإضافة وعرض Modal الخطأ
@@ -783,7 +783,7 @@ function SuperAdminDashboardContent() {
               value="categories"
               className="arabic-text flex-row-reverse"
             >
-              الكاتيجوريز ({categories.length})
+              الأقسام ({categories.length})
             </TabsTrigger>
             <TabsTrigger value="users" className="arabic-text flex-row-reverse">
               المستخدمين ({users.length})
@@ -971,17 +971,17 @@ function SuperAdminDashboardContent() {
                 <div className="flex justify-between items-center flex-row-reverse">
                   <div>
                     <CardTitle className="arabic-heading text-right">
-                      الكاتيجوريز
+                      الأقسام
                     </CardTitle>
                     <CardDescription className="arabic-text">
-                      جميع الكاتيجوريز والتصنيفات الفرعية في النظام
+                      جميع الأقسام والأقسام الفرعية في النظام
                     </CardDescription>
                   </div>
                   <Button
                     onClick={() => setShowCreateCategoryModal(true)}
                     className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                   >
-                    إضافة كاتيجوري جديد
+                    إضافة قسم جديد
                   </Button>
                 </div>
               </CardHeader>
@@ -1015,15 +1015,15 @@ function SuperAdminDashboardContent() {
                                 }`}
                               >
                                 {category.parentId === null
-                                  ? "كاتيجوري رئيسي"
-                                  : "سابكاتيجوري"}
+                                  ? "قسم رئيسي"
+                                  : "قسم فرعي"}
                               </span>
                             </div>
 
                             {subCategories.length > 0 && (
                               <div className="mt-3 pl-4 border-r-2 border-gray-200 dark:border-gray-600">
                                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 arabic-text">
-                                  التصنيفات الفرعية:
+                                  الأقسام الفرعية:
                                 </h4>
                                 <div className="space-y-1">
                                   {subCategories.map((subCategory: ApiCategory) => (
@@ -1062,7 +1062,7 @@ function SuperAdminDashboardContent() {
                     })
                   ) : (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400 arabic-text">
-                      لا توجد كاتيجوريز
+                      لا توجد أقسام
                     </div>
                   )}
                 </div>
@@ -1112,7 +1112,7 @@ function SuperAdminDashboardContent() {
                           </div>
                           {user.categories && user.categories.length > 0 && (
                             <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                              <span>📂 التصنيفات:</span>
+                              <span>📂 الأقسام:</span>
                               {user.categories.map((cat: { id: number; name: string }, idx: number) => (
                                 <span
                                   key={cat.id}
@@ -1405,10 +1405,10 @@ function SuperAdminDashboardContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2 space-x-reverse text-blue-600">
               <span>➕</span>
-              <span>إضافة كاتيجوري جديد</span>
+              <span>إضافة قسم جديد</span>
             </DialogTitle>
             <DialogDescription className="arabic-text">
-              أدخل بيانات الكاتيجوري الجديد
+              أدخل بيانات القسم الجديد
             </DialogDescription>
           </DialogHeader>
 
@@ -1428,7 +1428,7 @@ function SuperAdminDashboardContent() {
                   })
                 }
                 className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
-                placeholder="أدخل اسم الكاتيجوري"
+                placeholder="أدخل اسم القسم"
               />
             </div>
 
@@ -1465,15 +1465,15 @@ function SuperAdminDashboardContent() {
                   })
                 }
                 className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
-                placeholder="أدخل وصف الكاتيجوري"
+                placeholder="أدخل وصف القسم"
                 rows={3}
               />
             </div>
 
-            {/* نوع الكاتيجوري */}
+            {/* نوع القسم */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 arabic-text">
-                نوع الكاتيجوري
+                نوع القسم
               </label>
               <select
                 value={newCategoryData.ParentId || ""}
@@ -1486,12 +1486,12 @@ function SuperAdminDashboardContent() {
                 }
                 className="w-full p-2 border border-gray-300 rounded-lg arabic-text"
               >
-                <option value="">كاتيجوري رئيسي</option>
+                <option value="">قسم رئيسي</option>
                 {categories
                   .filter((cat: ApiCategory) => cat.parentId === null)
                   .map((category: ApiCategory) => (
                     <option key={category.id} value={category.id}>
-                      سابكاتيجوري تحت: {category.name}
+                      قسم فرعي تحت: {category.name}
                     </option>
                   ))}
               </select>
@@ -1519,7 +1519,7 @@ function SuperAdminDashboardContent() {
                   <span>جاري الإنشاء...</span>
                 </div>
               ) : (
-                "إنشاء الكاتيجوري"
+                "إنشاء القسم"
               )}
             </Button>
           </div>
@@ -1573,7 +1573,7 @@ function SuperAdminDashboardContent() {
               <span>تأكيد الحذف</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
-              هل أنت متأكد من حذف الكاتيجوري &quot;{categoryToDelete?.name}&quot;؟
+              هل أنت متأكد من حذف القسم &quot;{categoryToDelete?.name}&quot;؟
               <br />
               {(() => {
                 const subcategories = categories.filter(
@@ -1582,7 +1582,7 @@ function SuperAdminDashboardContent() {
                 return subcategories.length > 0 ? (
                   <>
                     <span className="text-orange-600 font-medium">
-                      سيتم حذف {subcategories.length} سابكاتيجوري معه أيضاً!
+                      سيتم حذف {subcategories.length} قسمًا فرعيًا معه أيضاً!
                     </span>
                     <br />
                   </>
@@ -1613,7 +1613,7 @@ function SuperAdminDashboardContent() {
                   <span>جاري الحذف...</span>
                 </div>
               ) : (
-                "حذف الكاتيجوري"
+                "حذف القسم"
               )}
             </Button>
           </div>

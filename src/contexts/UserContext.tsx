@@ -109,7 +109,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           console.warn("⚠️ No categories found in session either");
           setUserData(null);
           setError(
-            "ليس لديك صلاحية للوصول إلى بيانات المستخدم أو لم يتم تعيين تصنيفات لك"
+            "ليس لديك صلاحية للوصول إلى بيانات المستخدم أو لم يتم تعيين أقسام لك"
           );
           setLoading(false);
           return;
