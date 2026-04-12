@@ -31,12 +31,6 @@ function ArticleSkeleton() {
                 <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
                 <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
               </div>
-
-              <div className="space-y-2 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
-                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
-              </div>
             </div>
 
             <div className="lg:w-1/2 lg:order-2">
@@ -216,12 +210,7 @@ export default function NewsArticlePageClient({
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white leading-snug arabic-heading">
                 {article.title}
               </h1>
-
-              {article.summary && (
-                <p className="text-lg text-gray-700 dark:text-gray-300 arabic-text bg-gray-50 dark:bg-gray-700/50 p-5 rounded-2xl">
-                  {article.summary}
-                </p>
-              )}
+              {/* الملخص يُستخدم في الـ meta فقط (SEO) ولا يُعرض هنا حتى لا يتكرر مع المحتوى */}
             </div>
 
             <div className="lg:w-1/2 lg:order-2">

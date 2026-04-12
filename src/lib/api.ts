@@ -250,6 +250,89 @@ export interface ArticlesResponse {
   data: ApiArticle[];
 }
 
+/**
+ * يطابق استجابة الـ API سواء كانت الحقول camelCase أو PascalCase (مثل Summary).
+ * بدون ذلك يبقى summary فارغاً في الواجهة بينما يظهر الملخص في الـ meta من مسارات أخرى.
+ */
+export function normalizeApiArticle(raw: unknown): ApiArticle {
+  if (raw === null || typeof raw !== "object") {
+    return {
+      id: 0,
+      title: "",
+      summary: "",
+      content: "",
+      slug: "",
+      authorId: "",
+      keywords: null,
+      authorName: "",
+      publishedAt: "",
+      isTrending: false,
+      isPending: false,
+      categoryName: "",
+      imageUrl: null,
+    };
+  }
+  const r = raw as Record<string, unknown>;
+  const pickStr = (camel: string, pascal: string, def = ""): string => {
+    const v = r[camel] ?? r[pascal];
+    if (v === null || v === undefined) return def;
+    return String(v);
+  };
+  const pickNum = (camel: string, pascal: string): number => {
+    const v = r[camel] ?? r[pascal];
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const pickBool = (camel: string, pascal: string): boolean => {
+    const v = r[camel] ?? r[pascal];
+    if (typeof v === "boolean") return v;
+    return Boolean(v);
+  };
+  const pickNullStr = (camel: string, pascal: string): string | null => {
+    const v = r[camel] ?? r[pascal];
+    if (v === null || v === undefined) return null;
+    return String(v);
+  };
+
+  return {
+    id: pickNum("id", "Id"),
+    title: pickStr("title", "Title"),
+    summary: pickStr("summary", "Summary"),
+    content: pickStr("content", "Content"),
+    slug: pickStr("slug", "Slug"),
+    authorId: pickStr("authorId", "AuthorId"),
+    keywords: pickNullStr("keywords", "Keywords"),
+    authorName: pickStr("authorName", "AuthorName"),
+    publishedAt: pickStr("publishedAt", "PublishedAt"),
+    isTrending: pickBool("isTrending", "IsTrending"),
+    isPending: pickBool("isPending", "IsPending"),
+    categoryName: pickStr("categoryName", "CategoryName"),
+    imageUrl: pickNullStr("imageUrl", "ImageUrl"),
+  };
+}
+
+function normalizeArticlesResponse(raw: unknown): ArticlesResponse {
+  if (raw === null || typeof raw !== "object") {
+    return { pageIndex: 1, pageSize: 0, totalCount: 0, data: [] };
+  }
+  const d = raw as Record<string, unknown>;
+  const list = d.data ?? d.Data;
+  const items = Array.isArray(list)
+    ? list.map((item) => normalizeApiArticle(item))
+    : [];
+  const pickNum = (camel: string, pascal: string, def: number) => {
+    const v = d[camel] ?? d[pascal];
+    const n = Number(v);
+    return Number.isFinite(n) ? n : def;
+  };
+  return {
+    pageIndex: pickNum("pageIndex", "PageIndex", 1),
+    pageSize: pickNum("pageSize", "PageSize", 0),
+    totalCount: pickNum("totalCount", "TotalCount", 0),
+    data: items,
+  };
+}
+
 // دالة لجلب المقالات
 export const getArticles = async (
   pageIndex: number = 1,
@@ -302,7 +385,7 @@ export const getArticles = async (
 
     const data = await response.json();
     console.log("Articles data received:", data);
-    return data;
+    return normalizeArticlesResponse(data);
   } catch (error: unknown) {
     console.error("Error fetching articles:", error);
     return {
@@ -345,7 +428,7 @@ export const getArticleById = async (
 
     const data = await response.json();
     console.log("Article data received:", data);
-    return data;
+    return normalizeApiArticle(data);
   } catch (error: unknown) {
     console.error("Error fetching article:", error);
     return null;
@@ -386,7 +469,7 @@ export const getArticleBySlug = async (
 
     const data = await response.json();
     console.log("Article data received:", data);
-    return data;
+    return normalizeApiArticle(data);
   } catch (error: unknown) {
     console.error("Error fetching article by slug:", error);
     return null;
