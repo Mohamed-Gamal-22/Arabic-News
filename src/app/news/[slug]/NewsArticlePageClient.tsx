@@ -189,7 +189,7 @@ export default function NewsArticlePageClient({
           </Button>
         </div>
 
-        <article className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden p-6 sm:p-10">
+        <article className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 sm:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
             <div className="lg:w-1/2 lg:order-1 space-y-6">
               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
@@ -227,16 +227,14 @@ export default function NewsArticlePageClient({
             </div>
           </div>
 
-          <div className="mt-10 space-y-8">
-            <StaticAdPlaceholder
-              variant="banner"
-              className="mx-auto max-w-full lg:max-w-4xl"
-            />
+          <div className="my-8 w-full min-w-0">
+            <StaticAdPlaceholder variant="homeBanner" className="w-full" />
+          </div>
 
-            <div
-              className="flex flex-col gap-8 lg:flex-row lg:items-start"
-              dir="ltr"
-            >
+          <div
+            className="mt-10 flex flex-col gap-8 lg:flex-row lg:items-start"
+            dir="ltr"
+          >
               <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
                 <div
                   className="article-content arabic-text text-gray-800 dark:text-gray-200"
@@ -263,14 +261,12 @@ export default function NewsArticlePageClient({
                   </div>
                 )}
               </div>
-              <aside className="order-2 flex w-full shrink-0 flex-col gap-6 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
-                <StaticAdPlaceholder variant="medium" className="mx-auto w-full max-w-[300px]" />
-                <StaticAdPlaceholder
-                  variant="medium"
-                  className="mx-auto hidden w-full max-w-[300px] sm:block"
-                />
+              <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
+                <StaticAdPlaceholder variant="homeStack1" className="w-full" />
+                <StaticAdPlaceholder variant="homeStack2" className="w-full" />
+                <StaticAdPlaceholder variant="homeStack3" className="w-full" />
+                <StaticAdPlaceholder variant="homeStack4" className="w-full" />
               </aside>
-            </div>
           </div>
         </article>
 

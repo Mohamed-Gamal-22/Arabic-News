@@ -348,22 +348,31 @@ export default function Home() {
           </div>
         </div>
 
-        {/* شبكة المقالات + إعلانات جانبية (يسار الشاشة على lg) */}
+        {/* بانر بعرض الحاوية ثم مقالات + 4 إعلانات جانبية */}
         <div className="mb-12">
           <div className="mx-auto max-w-7xl">
             <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white arabic-heading">
               آخر الأخبار
             </h2>
 
-            <StaticAdPlaceholder
-              variant="homeBanner"
-              className="mx-auto mb-8 max-w-4xl"
-            />
+            <div className="mb-6 w-full min-w-0">
+              <StaticAdPlaceholder
+                variant="homeBanner"
+                className="w-full"
+              />
+            </div>
 
             <div
               className="flex flex-col gap-8 lg:flex-row lg:items-start"
               dir="ltr"
             >
+              <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
+                <StaticAdPlaceholder variant="homeStack1" className="w-full" />
+                <StaticAdPlaceholder variant="homeStack2" className="w-full" />
+                <StaticAdPlaceholder variant="homeStack3" className="w-full" />
+                <StaticAdPlaceholder variant="homeStack4" className="w-full" />
+              </aside>
+
               <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
                 {loading ? (
                   <ArticlesSkeleton />
@@ -397,17 +406,6 @@ export default function Home() {
                   </div>
                 )}
               </div>
-
-              <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
-                <StaticAdPlaceholder
-                  variant="homeSide1"
-                  className="mx-auto w-full max-w-[300px]"
-                />
-                <StaticAdPlaceholder
-                  variant="homeSide2"
-                  className="mx-auto w-full max-w-[300px]"
-                />
-              </aside>
             </div>
           </div>
         </div>

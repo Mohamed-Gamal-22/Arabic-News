@@ -4,16 +4,20 @@ export type StaticAdVariant =
   | "banner"
   | "medium"
   | "homeBanner"
-  | "homeSide1"
-  | "homeSide2";
+  | "homeStack1"
+  | "homeStack2"
+  | "homeStack3"
+  | "homeStack4";
 
 /** مسارات الملفات في `public/ads` — استبدل الصور واحتفظ بنفس الأسماء أو عدّل CONFIG أدناه */
 export const STATIC_AD_PATHS: Record<StaticAdVariant, string> = {
   banner: "/ads/banner-728x90.svg",
   medium: "/ads/medium-300x250.svg",
   homeBanner: "/ads/home-banner.svg",
-  homeSide1: "/ads/home-side-1.svg",
-  homeSide2: "/ads/home-side-2.svg",
+  homeStack1: "/ads/home-stack-1.svg",
+  homeStack2: "/ads/home-stack-2.svg",
+  homeStack3: "/ads/home-stack-3.svg",
+  homeStack4: "/ads/home-stack-4.svg",
 };
 
 const CONFIG: Record<
@@ -23,8 +27,10 @@ const CONFIG: Record<
   banner: { src: STATIC_AD_PATHS.banner, w: 728, h: 90 },
   medium: { src: STATIC_AD_PATHS.medium, w: 300, h: 250 },
   homeBanner: { src: STATIC_AD_PATHS.homeBanner, w: 728, h: 90 },
-  homeSide1: { src: STATIC_AD_PATHS.homeSide1, w: 300, h: 250 },
-  homeSide2: { src: STATIC_AD_PATHS.homeSide2, w: 300, h: 250 },
+  homeStack1: { src: STATIC_AD_PATHS.homeStack1, w: 300, h: 250 },
+  homeStack2: { src: STATIC_AD_PATHS.homeStack2, w: 300, h: 250 },
+  homeStack3: { src: STATIC_AD_PATHS.homeStack3, w: 300, h: 250 },
+  homeStack4: { src: STATIC_AD_PATHS.homeStack4, w: 300, h: 250 },
 };
 
 /**
