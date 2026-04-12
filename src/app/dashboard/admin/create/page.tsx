@@ -30,13 +30,94 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutButton from "@/components/LogoutButton";
-import { createArticle, CurrentUserProfile } from "@/lib/api";
+import ArticleApprovalModal from "@/components/ArticleApprovalModal";
+import { createArticle, CurrentUserProfile, ApiArticle } from "@/lib/api";
+import { approveArticleUnpend } from "@/lib/articles";
 import {
   getCategoriesWithToken,
   getCurrentUser,
   ApiCategory,
 } from "@/lib/superAdminApi";
 import { getCurrentUserMe } from "@/lib/api";
+
+type FormState = {
+  title: string;
+  summary: string;
+  content: string;
+  slug: string;
+  categoryId: string;
+  keywords: string;
+};
+
+function normalizeCategoryIds(
+  userData: {
+    categoryIds?: number[] | string;
+    CategoryIds?: number[];
+    categories?: Array<{ id?: number; categoryId?: number }>;
+  } | null
+): number[] {
+  if (!userData) return [];
+  if (typeof userData.categoryIds === "string") {
+    return userData.categoryIds
+      .split(",")
+      .map((id: string) => Number(id.trim()))
+      .filter((id: number) => !isNaN(id));
+  }
+  const fromArray: (number | undefined)[] =
+    userData.categoryIds ||
+    userData.CategoryIds ||
+    userData.categories?.map((c) => c.id ?? c.categoryId) ||
+    [];
+  const raw = fromArray || [];
+  return (Array.isArray(raw) ? raw : [raw])
+    .map((id: number | string | undefined) => Number(id))
+    .filter((id: number) => !isNaN(id));
+}
+
+function validateCreateForm(
+  formData: FormState,
+  imageFile: File | null
+): string | null {
+  if (!formData.title?.trim()) return "العنوان مطلوب";
+  if (!formData.summary?.trim()) return "الملخص مطلوب";
+  if (!formData.content?.trim()) return "المحتوى مطلوب";
+  if (!formData.slug?.trim()) return "الرابط (Slug) مطلوب";
+  if (!formData.categoryId?.trim()) return "القسم مطلوب";
+  if (!imageFile) return "الصورة مطلوبة";
+  const categoryId = Number(formData.categoryId);
+  if (!categoryId || isNaN(categoryId)) return "يجب اختيار قسم للمقال";
+  return null;
+}
+
+function validateAdminCategory(
+  formData: FormState,
+  currentUser: CurrentUserProfile | null
+): string | null {
+  const categoryId = Number(formData.categoryId);
+  const allowed = normalizeCategoryIds(currentUser);
+  if (allowed.length > 0 && !allowed.includes(categoryId)) {
+    return "لا يمكن إضافة مقال خارج الأقسام المسموح بها لك";
+  }
+  return null;
+}
+
+function buildArticleFormData(
+  formData: FormState,
+  imageFile: File
+): { formDataToSend: FormData; categoryId: number } {
+  const categoryId = Number(formData.categoryId);
+  const formDataToSend = new FormData();
+  formDataToSend.append("Title", formData.title.trim());
+  formDataToSend.append("Content", formData.content || "");
+  formDataToSend.append("Summary", formData.summary.trim());
+  formDataToSend.append("Slug", formData.slug.trim());
+  formDataToSend.append("CategoryId", categoryId.toString());
+  formDataToSend.append("Image", imageFile);
+  if (formData.keywords?.trim()) {
+    formDataToSend.append("Keywords", formData.keywords.trim());
+  }
+  return { formDataToSend, categoryId };
+}
 
 export default function AdminCreateArticlePage() {
   const router = useRouter();
@@ -48,8 +129,12 @@ export default function AdminCreateArticlePage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState(
+    "تم إنشاء المقال بنجاح!"
+  );
+  const [showInstantModal, setShowInstantModal] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormState>({
     title: "",
     summary: "",
     content: "",
@@ -81,28 +166,6 @@ export default function AdminCreateArticlePage() {
 
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
-
-  const normalizeCategoryIds = (userData: { categoryIds?: number[] | string; CategoryIds?: number[]; categories?: Array<{ id?: number; categoryId?: number }> }) => {
-    // Handle case where categoryIds might be a string
-    if (typeof userData?.categoryIds === "string") {
-      return userData.categoryIds
-        .split(",")
-        .map((id: string) => Number(id.trim()))
-        .filter((id: number) => !isNaN(id));
-    }
-
-    const fromArray: (number | undefined)[] =
-      userData?.categoryIds ||
-      userData?.CategoryIds ||
-      userData?.categories?.map((c: { id?: number; categoryId?: number }) => c.id ?? c.categoryId) ||
-      [];
-
-    const raw = fromArray || [];
-
-    return (Array.isArray(raw) ? raw : [raw])
-      .map((id: number | string | undefined) => Number(id))
-      .filter((id: number) => !isNaN(id));
-  };
 
   useEffect(() => {
     const fetchAllCategories = async () => {
@@ -215,7 +278,6 @@ export default function AdminCreateArticlePage() {
     setError(null);
 
     try {
-      // التحقق من وجود التوكن في الـ session
       if (!session?.accessToken) {
         setError("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
         setLoading(false);
@@ -224,104 +286,118 @@ export default function AdminCreateArticlePage() {
 
       const token = session.accessToken;
 
-      // التحقق من جميع الحقول المطلوبة
-      if (!formData.title || !formData.title.trim()) {
-        setErrorMessage("العنوان مطلوب");
+      const basicErr = validateCreateForm(formData, imageFile);
+      if (basicErr) {
+        setErrorMessage(basicErr);
         setShowErrorModal(true);
         setLoading(false);
         return;
       }
 
-      if (!formData.summary || !formData.summary.trim()) {
-        setErrorMessage("الملخص مطلوب");
+      const catErr = validateAdminCategory(formData, currentUser);
+      if (catErr) {
+        setErrorMessage(catErr);
         setShowErrorModal(true);
         setLoading(false);
         return;
       }
 
-      if (!formData.content || !formData.content.trim()) {
-        setErrorMessage("المحتوى مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.slug || !formData.slug.trim()) {
-        setErrorMessage("الرابط (Slug) مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.categoryId || !formData.categoryId.trim()) {
-        setErrorMessage("القسم مطلوب");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      if (!imageFile) {
-        setErrorMessage("الصورة مطلوبة");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      // إنشاء FormData مع الأسماء الصحيحة للـ API
-      const formDataToSend = new FormData();
-
-      // استخدام الأسماء الصحيحة حسب API .NET - CategoryId يجب أن يكون رقم (number)
-      const categoryId = formData.categoryId ? Number(formData.categoryId) : null;
-
-      if (!categoryId || isNaN(categoryId)) {
-        setErrorMessage("يجب اختيار قسم للمقال");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      // التحقق من أن القسم ضمن التصنيفات المسموح بها للأدمن
-      const allowedCategoryIds =
-        currentUser?.categoryIds && currentUser.categoryIds.length > 0
-          ? currentUser.categoryIds
-          : currentUser?.categories?.map((c: { id?: number; categoryId?: number }) => c.id ?? c.categoryId) || [];
-
-      if (
-        allowedCategoryIds.length > 0 &&
-        !allowedCategoryIds.includes(categoryId)
-      ) {
-        setErrorMessage("لا يمكن إضافة مقال خارج الأقسام المسموح بها لك");
-        setShowErrorModal(true);
-        setLoading(false);
-        return;
-      }
-
-      formDataToSend.append("Title", formData.title);
-      formDataToSend.append("Content", formData.content || "");
-      formDataToSend.append("Summary", formData.summary || "");
-      formDataToSend.append("Slug", formData.slug);
-      formDataToSend.append("CategoryId", categoryId.toString());
-      
-      console.log("CategoryId to send (as number):", categoryId);
-
-      if (imageFile) {
-        formDataToSend.append("Image", imageFile);
-      }
-
-      // إضافة Keywords كـ string مفصولة بفواصل
-      if (formData.keywords && formData.keywords.trim()) {
-        const keywordsString = formData.keywords.trim();
-        formDataToSend.append("Keywords", keywordsString);
-      }
+      const { formDataToSend } = buildArticleFormData(
+        formData,
+        imageFile as File
+      );
 
       const createdArticle = await createArticle(formDataToSend, token);
 
       if (createdArticle) {
+        setSuccessMessage("تم إنشاء المقال بنجاح!");
         setShowSuccessModal(true);
       }
     } catch (err: unknown) {
-      setError((err instanceof Error ? err.message : "حدث خطأ في إنشاء المقال"));
+      setError(err instanceof Error ? err.message : "حدث خطأ في إنشاء المقال");
       console.error("Error creating article:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenInstantModal = () => {
+    if (!session?.accessToken) {
+      setErrorMessage("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
+      setShowErrorModal(true);
+      return;
+    }
+    const basicErr = validateCreateForm(formData, imageFile);
+    if (basicErr) {
+      setErrorMessage(basicErr);
+      setShowErrorModal(true);
+      return;
+    }
+    const catErr = validateAdminCategory(formData, currentUser);
+    if (catErr) {
+      setErrorMessage(catErr);
+      setShowErrorModal(true);
+      return;
+    }
+    setShowInstantModal(true);
+  };
+
+  const handleInstantPublish = async (approvalData: {
+    IsTrending: boolean;
+    TrendPeriodInDays: number;
+  }) => {
+    if (!session?.accessToken || !imageFile) return;
+
+    const token = session.accessToken;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { formDataToSend, categoryId } = buildArticleFormData(
+        formData,
+        imageFile
+      );
+
+      const createdArticle: ApiArticle | null = await createArticle(
+        formDataToSend,
+        token
+      );
+
+      if (!createdArticle?.id) {
+        throw new Error("لم يُرجع الخادم معرف المقال بعد الإنشاء");
+      }
+
+      try {
+        await approveArticleUnpend(
+          createdArticle.id,
+          {
+            Title: formData.title.trim(),
+            Content: formData.content || "",
+            Summary: formData.summary.trim(),
+            Slug: formData.slug.trim(),
+            CategoryId: categoryId,
+            IsTrending: approvalData.IsTrending,
+            TrendPeriodInDays: approvalData.IsTrending
+              ? approvalData.TrendPeriodInDays
+              : 1,
+            IsPending: false,
+          },
+          token
+        );
+        setSuccessMessage("تم إنشاء المقال ونشره فوراً!");
+        setShowInstantModal(false);
+        setShowSuccessModal(true);
+      } catch {
+        setSuccessMessage(
+          "تم إنشاء المقال، لكن تعذر نشره فوراً. قد يكون تحت المراجعة—تحقق من التبويب المناسب."
+        );
+        setShowInstantModal(false);
+        setShowSuccessModal(true);
+      }
+    } catch (err: unknown) {
+      throw err instanceof Error
+        ? err
+        : new Error("حدث خطأ في إنشاء المقال أو نشره");
     } finally {
       setLoading(false);
     }
@@ -535,7 +611,7 @@ export default function AdminCreateArticlePage() {
                 />
               </div>
 
-              <div className="flex flex-wrap justify-end gap-3">
+              <div className="flex flex-wrap justify-end gap-3 space-x-reverse">
                 <Button
                   type="button"
                   variant="outline"
@@ -543,6 +619,15 @@ export default function AdminCreateArticlePage() {
                   disabled={loading}
                 >
                   إلغاء
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="bg-amber-600 text-white hover:bg-amber-700"
+                  onClick={handleOpenInstantModal}
+                  disabled={loading}
+                >
+                  إنشاء في الحال
                 </Button>
                 <Button type="submit" disabled={loading}>
                   {loading ? "جاري الإنشاء..." : "إنشاء المقال"}
@@ -553,6 +638,17 @@ export default function AdminCreateArticlePage() {
         </Card>
       </main>
 
+      <ArticleApprovalModal
+        open={showInstantModal}
+        onOpenChange={setShowInstantModal}
+        onApprove={handleInstantPublish}
+        loading={loading}
+        title="نشر فوري"
+        description="حدد إن كان المقال عاجلاً (ترند) وعدد أيام الترند، ثم يُنشَر مباشرة دون المراجعة."
+        trendingLabel="عاجل (ترند)"
+        confirmLabel="تأكيد النشر"
+      />
+
       {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="arabic-text">
@@ -562,7 +658,7 @@ export default function AdminCreateArticlePage() {
               <span>تمام تم الإضافة</span>
             </DialogTitle>
             <DialogDescription className="arabic-text text-lg">
-              تم إنشاء المقال بنجاح!
+              {successMessage}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 space-x-reverse mt-4">
