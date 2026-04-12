@@ -48,7 +48,7 @@ export default async function RootLayout({
       >
         <AuthProvider session={session}>
           <Header categories={categories} session={session} />
-          <main>{children}</main>
+          <main className="min-w-0 overflow-x-hidden">{children}</main>
           <Footer categories={categories.map(cat => ({
             id: typeof cat.id === 'string' ? parseInt(cat.id, 10) : (typeof cat.id === 'number' ? cat.id : 0),
             name: cat.name,

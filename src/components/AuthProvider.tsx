@@ -13,7 +13,10 @@ interface AuthProviderProps {
 
 export default function AuthProvider({ children, session }: AuthProviderProps) {
   return (
-    <SessionProvider session={session ?? undefined} refetchOnWindowFocus>
+    <SessionProvider
+      session={session ?? undefined}
+      refetchOnWindowFocus={false}
+    >
       <UserProvider>{children}</UserProvider>
     </SessionProvider>
   );

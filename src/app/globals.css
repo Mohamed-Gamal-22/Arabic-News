@@ -182,8 +182,17 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* منع السكرول الأفقي على مستوى الصفحة (عناصر أعرض من الشاشة) */
+  html {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    max-width: 100%;
   }
 }
 
