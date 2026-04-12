@@ -7,12 +7,13 @@ import { getArticles, ApiArticle } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
+import { StaticAdPlaceholder } from "@/components/ads/StaticAdPlaceholder";
 
 // Skeleton Loading للمقالات
 function ArticlesSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className="mx-auto max-w-6xl">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
         {[...Array(12)].map((_, index) => (
           <div
             key={index}
@@ -347,47 +348,68 @@ export default function Home() {
           </div>
         </div>
 
-        {/* شبكة المقالات */}
+        {/* شبكة المقالات + إعلانات جانبية (يسار الشاشة على lg) */}
         <div className="mb-12">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 arabic-heading">
+          <div className="mx-auto max-w-7xl">
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white arabic-heading">
               آخر الأخبار
             </h2>
-          </div>
-          {loading ? (
-            <ArticlesSkeleton />
-          ) : regularArticles.length > 0 ? (
-            <>
-              <div className="max-w-6xl mx-auto">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                  {regularArticles.map((article) => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
+
+            <StaticAdPlaceholder
+              variant="homeBanner"
+              className="mx-auto mb-8 max-w-4xl"
+            />
+
+            <div
+              className="flex flex-col gap-8 lg:flex-row lg:items-start"
+              dir="ltr"
+            >
+              <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
+                {loading ? (
+                  <ArticlesSkeleton />
+                ) : regularArticles.length > 0 ? (
+                  <>
+                    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
+                      {regularArticles.map((article) => (
+                        <ArticleCard key={article.id} article={article} />
+                      ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="mx-auto mt-8 max-w-6xl">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={handlePageChange}
+                          className="justify-center"
+                        />
+                        <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400 arabic-text">
+                          صفحة {currentPage} من {totalPages}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="py-12 text-center">
+                    <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
+                      لا توجد مقالات متاحة حالياً
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="max-w-6xl mx-auto mt-8">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    className="justify-center"
-                  />
-                  <div className="text-center mt-4 text-sm text-gray-600 dark:text-gray-400 arabic-text">
-                    صفحة {currentPage} من {totalPages}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
-                لا توجد مقالات متاحة حالياً
-              </p>
+              <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
+                <StaticAdPlaceholder
+                  variant="homeSide1"
+                  className="mx-auto w-full max-w-[300px]"
+                />
+                <StaticAdPlaceholder
+                  variant="homeSide2"
+                  className="mx-auto w-full max-w-[300px]"
+                />
+              </aside>
             </div>
-          )}
+          </div>
         </div>
       </section>
 

@@ -8,6 +8,7 @@ import { getArticleBySlug, ApiArticle, getArticles } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { convertVideoLinksToEmbeds } from "@/lib/utils";
+import { StaticAdPlaceholder } from "@/components/ads/StaticAdPlaceholder";
 
 function ArticleSkeleton() {
   return (
@@ -227,30 +228,49 @@ export default function NewsArticlePageClient({
           </div>
 
           <div className="mt-10 space-y-8">
-            <div
-              className="article-content arabic-text text-gray-800 dark:text-gray-200"
-              dangerouslySetInnerHTML={{
-                __html: convertVideoLinksToEmbeds(article.content),
-              }}
+            <StaticAdPlaceholder
+              variant="banner"
+              className="mx-auto max-w-full lg:max-w-4xl"
             />
 
-            {article.keywords && (
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 arabic-heading">
-                  الكلمات المفتاحية:
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {article.keywords.split(",").map((keyword, index) => (
-                    <span
-                      key={index}
-                      className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm arabic-text"
-                    >
-                      {keyword.trim()}
-                    </span>
-                  ))}
-                </div>
+            <div
+              className="flex flex-col gap-8 lg:flex-row lg:items-start"
+              dir="ltr"
+            >
+              <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
+                <div
+                  className="article-content arabic-text text-gray-800 dark:text-gray-200"
+                  dangerouslySetInnerHTML={{
+                    __html: convertVideoLinksToEmbeds(article.content),
+                  }}
+                />
+
+                {article.keywords && (
+                  <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 arabic-heading">
+                      الكلمات المفتاحية:
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {article.keywords.split(",").map((keyword, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm arabic-text"
+                        >
+                          {keyword.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+              <aside className="order-2 flex w-full shrink-0 flex-col gap-6 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
+                <StaticAdPlaceholder variant="medium" className="mx-auto w-full max-w-[300px]" />
+                <StaticAdPlaceholder
+                  variant="medium"
+                  className="mx-auto hidden w-full max-w-[300px] sm:block"
+                />
+              </aside>
+            </div>
           </div>
         </article>
 
