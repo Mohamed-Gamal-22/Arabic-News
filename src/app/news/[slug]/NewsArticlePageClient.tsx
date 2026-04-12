@@ -264,8 +264,6 @@ export default function NewsArticlePageClient({
               <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
                 <StaticAdPlaceholder variant="homeStack1" className="w-full" />
                 <StaticAdPlaceholder variant="homeStack2" className="w-full" />
-                <StaticAdPlaceholder variant="homeStack3" className="w-full" />
-                <StaticAdPlaceholder variant="homeStack4" className="w-full" />
               </aside>
           </div>
         </article>
@@ -319,6 +317,24 @@ export default function NewsArticlePageClient({
             </div>
           </section>
         )}
+
+        <div
+          className="grid w-full grid-cols-2 gap-3 sm:gap-4"
+          dir="ltr"
+        >
+          <div className="min-w-0">
+            <StaticAdPlaceholder
+              variant="homeStack3"
+              className="w-full [&_img]:h-auto [&_img]:max-h-[200px] [&_img]:w-full [&_img]:object-contain"
+            />
+          </div>
+          <div className="min-w-0">
+            <StaticAdPlaceholder
+              variant="homeStack4"
+              className="w-full [&_img]:h-auto [&_img]:max-h-[200px] [&_img]:w-full [&_img]:object-contain"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

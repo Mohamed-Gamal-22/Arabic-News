@@ -348,7 +348,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* بانر بعرض الحاوية ثم مقالات + 4 إعلانات جانبية */}
+        {/* بانر + عمودين جانبيين؛ إعلانان إضافيان صفّاً أسفل القسم */}
         <div className="mb-12">
           <div className="mx-auto max-w-7xl">
             <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-white arabic-heading">
@@ -369,8 +369,6 @@ export default function Home() {
               <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
                 <StaticAdPlaceholder variant="homeStack1" className="w-full" />
                 <StaticAdPlaceholder variant="homeStack2" className="w-full" />
-                <StaticAdPlaceholder variant="homeStack3" className="w-full" />
-                <StaticAdPlaceholder variant="homeStack4" className="w-full" />
               </aside>
 
               <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
@@ -405,6 +403,24 @@ export default function Home() {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div
+              className="mt-10 grid w-full grid-cols-2 gap-3 sm:gap-4"
+              dir="ltr"
+            >
+              <div className="min-w-0">
+                <StaticAdPlaceholder
+                  variant="homeStack3"
+                  className="w-full [&_img]:h-auto [&_img]:max-h-[200px] [&_img]:w-full [&_img]:object-contain"
+                />
+              </div>
+              <div className="min-w-0">
+                <StaticAdPlaceholder
+                  variant="homeStack4"
+                  className="w-full [&_img]:h-auto [&_img]:max-h-[200px] [&_img]:w-full [&_img]:object-contain"
+                />
               </div>
             </div>
           </div>

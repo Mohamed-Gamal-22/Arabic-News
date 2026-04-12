@@ -17,14 +17,16 @@ type FooterProps = {
 
 export default function Footer({ categories = [] }: FooterProps) {
   const pathname = usePathname();
-  const isHomePage = pathname === "/";
 
   const topCategories = useMemo(() => {
     if (!Array.isArray(categories)) return [];
     return categories.filter((cat) => cat.parentId === null);
   }, [categories]);
 
-  if (!isHomePage) {
+  const hideFooter =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/auth");
+
+  if (hideFooter) {
     return null;
   }
 
