@@ -332,12 +332,60 @@ export default function Home() {
               الأخبار العاجلة
             </h2>
 
+            <div className="mx-auto mb-6 w-full min-w-0 max-w-7xl">
+              <StaticAdPlaceholder
+                variant="homeBanner"
+                className="w-full"
+              />
+            </div>
+
             {trendingLoading ? (
               <TrendingSkeleton />
             ) : trendingArticles.length > 0 ? (
-              <div className="rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-2xl px-2 sm:px-6 lg:px-10 py-4">
-                <ArticlesSlider articles={trendingArticles} />
-              </div>
+              <>
+                {/*
+                  الشاشات الواسعة (xl+): إعلانان رفيعان يمين/يسار السلايدر.
+                  أصغر من xl: الأعمدة الجانبية تُخفى (hidden) لتوفير عرض؛ نعرض نفس الإعلانين
+                  في صفّ تحت السلايدر (البلوك الثاني) حتى لا تختفي أماكن الإعلان.
+                */}
+                <div
+                  className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-center xl:gap-3 2xl:gap-4"
+                  dir="ltr"
+                >
+                  <aside className="hidden min-w-0 shrink-0 xl:block xl:w-[120px]">
+                    <StaticAdPlaceholder
+                      variant="sliderRailLeft"
+                      className="w-full [&_img]:max-h-[400px] [&_img]:w-full [&_img]:object-cover"
+                    />
+                  </aside>
+                  <div className="min-w-0 flex-1 overflow-hidden rounded-3xl bg-white px-2 py-4 shadow-2xl dark:bg-gray-800 sm:px-6 lg:px-10">
+                    <ArticlesSlider articles={trendingArticles} />
+                  </div>
+                  <aside className="hidden min-w-0 shrink-0 xl:block xl:w-[120px]">
+                    <StaticAdPlaceholder
+                      variant="sliderRailRight"
+                      className="w-full [&_img]:max-h-[400px] [&_img]:w-full [&_img]:object-cover"
+                    />
+                  </aside>
+                </div>
+                <div
+                  className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 xl:hidden"
+                  dir="ltr"
+                >
+                  <div className="min-w-0">
+                    <StaticAdPlaceholder
+                      variant="sliderRailLeft"
+                      className="w-full [&_img]:max-h-[220px] [&_img]:w-full [&_img]:object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <StaticAdPlaceholder
+                      variant="sliderRailRight"
+                      className="w-full [&_img]:max-h-[220px] [&_img]:w-full [&_img]:object-cover"
+                    />
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-12 text-center">
                 <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
@@ -366,12 +414,12 @@ export default function Home() {
               className="flex flex-col gap-8 lg:flex-row lg:items-start"
               dir="ltr"
             >
-              <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-1 lg:max-w-[300px] lg:sticky lg:top-4 lg:self-start">
+              <aside className="order-1 grid w-full min-w-0 shrink-0 grid-cols-2 gap-3 sm:gap-4 lg:order-1 lg:flex lg:max-w-[300px] lg:flex-col lg:gap-4 lg:sticky lg:top-4 lg:self-start">
                 <StaticAdPlaceholder variant="homeStack1" className="w-full" />
                 <StaticAdPlaceholder variant="homeStack2" className="w-full" />
               </aside>
 
-              <div className="order-1 min-w-0 flex-1 space-y-8 lg:order-2">
+              <div className="order-2 min-w-0 flex-1 space-y-8 lg:order-2">
                 {loading ? (
                   <ArticlesSkeleton />
                 ) : regularArticles.length > 0 ? (

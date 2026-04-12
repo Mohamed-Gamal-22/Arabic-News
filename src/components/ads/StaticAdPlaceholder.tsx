@@ -7,7 +7,9 @@ export type StaticAdVariant =
   | "homeStack1"
   | "homeStack2"
   | "homeStack3"
-  | "homeStack4";
+  | "homeStack4"
+  | "sliderRailLeft"
+  | "sliderRailRight";
 
 /** مسارات الملفات في `public/ads` — استبدل الصور واحتفظ بنفس الأسماء أو عدّل CONFIG أدناه */
 export const STATIC_AD_PATHS: Record<StaticAdVariant, string> = {
@@ -18,6 +20,8 @@ export const STATIC_AD_PATHS: Record<StaticAdVariant, string> = {
   homeStack2: "/ads/home-stack-2.svg",
   homeStack3: "/ads/home-stack-3.svg",
   homeStack4: "/ads/home-stack-4.svg",
+  sliderRailLeft: "/ads/slider-rail-left.svg",
+  sliderRailRight: "/ads/slider-rail-right.svg",
 };
 
 const CONFIG: Record<
@@ -31,6 +35,8 @@ const CONFIG: Record<
   homeStack2: { src: STATIC_AD_PATHS.homeStack2, w: 300, h: 250 },
   homeStack3: { src: STATIC_AD_PATHS.homeStack3, w: 300, h: 250 },
   homeStack4: { src: STATIC_AD_PATHS.homeStack4, w: 300, h: 250 },
+  sliderRailLeft: { src: STATIC_AD_PATHS.sliderRailLeft, w: 120, h: 600 },
+  sliderRailRight: { src: STATIC_AD_PATHS.sliderRailRight, w: 120, h: 600 },
 };
 
 /**

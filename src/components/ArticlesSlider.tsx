@@ -1,30 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ApiArticle } from "@/lib/api";
+
+const SLIDER_MAX = 4;
 
 interface ArticlesSliderProps {
   articles: ApiArticle[];
 }
 
 export default function ArticlesSlider({ articles }: ArticlesSliderProps) {
+  const items = useMemo(
+    () => articles.slice(0, Math.min(SLIDER_MAX, articles.length)),
+    [articles]
+  );
+
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [pause, setPause] = useState(false);
 
   useEffect(() => {
-    if (articles.length > 0) {
-      const interval = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % articles.length);
-      }, 5000);
+    setCurrentSlide(0);
+  }, [items.length]);
 
-      return () => clearInterval(interval);
-    }
-  }, [articles.length]);
+  useEffect(() => {
+    if (items.length <= 1 || pause) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % items.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [items.length, pause]);
 
-  if (articles.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-12 text-center">
+      <div className="w-full rounded-2xl bg-gray-100 p-12 text-center dark:bg-gray-800">
         <p className="text-xl text-gray-600 dark:text-gray-400 arabic-text">
           لا توجد أخبار عاجلة متاحة
         </p>
@@ -32,125 +42,125 @@ export default function ArticlesSlider({ articles }: ArticlesSliderProps) {
     );
   }
 
-  const currentArticle = articles[currentSlide];
+  const currentArticle = items[currentSlide];
   const imageUrl =
     currentArticle.imageUrl ||
     `https://picsum.photos/1200/800?random=${currentArticle.id}`;
 
   return (
-    <div className="relative w-full max-w-7xl lg:max-w-[90rem] xl:max-w-[95rem] mx-auto">
-      {/* الخبر المميز */}
-      <div className="relative w-full h-[200px] sm:h-[260px] md:h-[320px] lg:h-[380px] overflow-hidden rounded-3xl shadow-2xl mb-6">
-        <Link href={`/news/${currentArticle.slug}`}>
-          <div className="relative w-full h-full cursor-pointer">
-            <Image
-              src={imageUrl}
-              alt={currentArticle.title}
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+    <div
+      dir="rtl"
+      className="mx-auto w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-900 shadow-2xl dark:border-gray-700"
+      onMouseEnter={() => setPause(true)}
+      onMouseLeave={() => setPause(false)}
+    >
+      <div className="flex min-h-[280px] flex-col lg:min-h-[360px] lg:flex-row">
+        {/* المنطقة الرئيسية — على اليمين في RTL */}
+        <div className="relative flex min-h-[240px] flex-[3] flex-col lg:min-h-[360px]">
+          <Link
+            href={`/news/${currentArticle.slug}`}
+            className="relative min-h-[200px] w-full flex-1 lg:min-h-[280px]"
+          >
+            <div className="absolute inset-0">
+              <Image
+                src={imageUrl}
+                alt={currentArticle.title}
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 1024px) 100vw, 75vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+            </div>
+            <span className="sr-only">{currentArticle.title}</span>
+          </Link>
 
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white">
-              <div className="max-w-4xl mx-auto">
-                <div className="mb-2 md:mb-4">
-                  <span className="bg-red-600 text-white px-2 py-1 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold">
-                    {currentArticle.categoryName}
-                  </span>
+          {/* شريط سفلي: أرقام يسار الشاشة | فاصل | عنوان يمين */}
+          <div
+            dir="ltr"
+            className="relative z-10 flex shrink-0 items-center gap-3 bg-black/80 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4"
+          >
+            {items.length > 1 && (
+              <>
+                <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+                  {items.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentSlide(index);
+                      }}
+                      className={`flex h-8 w-8 items-center justify-center text-sm font-bold transition-colors sm:h-9 sm:w-9 ${
+                        index === currentSlide
+                          ? "bg-white text-gray-900"
+                          : "bg-gray-700 text-white hover:bg-gray-600"
+                      }`}
+                      aria-label={`خبر ${index + 1}`}
+                      aria-current={index === currentSlide}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
                 </div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4 arabic-heading line-clamp-2">
-                  {currentArticle.title}
-                </h1>
-                <p className="text-sm md:text-base lg:text-lg mb-3 md:mb-6 arabic-text line-clamp-2 md:line-clamp-3 text-gray-200">
-                  {currentArticle.summary}
-                </p>
-                <div className="flex items-center space-x-3 md:space-x-6 space-x-reverse text-xs md:text-sm text-gray-300">
-                  <div className="flex items-center space-x-1 md:space-x-2 space-x-reverse">
-                    <span>👤</span>
-                    <span>{currentArticle.authorName}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 md:space-x-2 space-x-reverse">
-                    <span>📅</span>
-                    <span>
-                      {new Date(currentArticle.publishedAt).toLocaleDateString(
-                        "ar-EG"
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                <div
+                  className="hidden h-8 w-px shrink-0 bg-red-600 sm:block"
+                  aria-hidden
+                />
+              </>
+            )}
+
+            <div dir="rtl" className="min-w-0 flex-1 pr-1 text-right">
+              <span className="inline-block rounded bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+                {currentArticle.categoryName}
+              </span>
+              <h2 className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-white sm:text-base md:text-lg lg:text-xl arabic-heading">
+                {currentArticle.title}
+              </h2>
             </div>
           </div>
-        </Link>
-
-        <button
-          onClick={() =>
-            setCurrentSlide(
-              (prev) => (prev - 1 + articles.length) % articles.length
-            )
-          }
-          className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full transition-colors text-lg md:text-xl"
-        >
-          ←
-        </button>
-
-        <button
-          onClick={() =>
-            setCurrentSlide((prev) => (prev + 1) % articles.length)
-          }
-          className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 md:p-3 rounded-full transition-colors text-lg md:text-xl"
-        >
-          →
-        </button>
-
-        <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
-          {articles.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full border border-white/60 transition-all ${
-                index === currentSlide
-                  ? "bg-white shadow-lg scale-110"
-                  : "bg-white/40 hover:bg-white/70"
-              }`}
-            />
-          ))}
         </div>
-      </div>
 
-      {/* الصور الصغيرة */}
-      {articles.length > 1 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-5 px-1">
-          {articles.slice(0, 4).map((article, index) => {
-            const thumbImageUrl =
+        {/* القائمة الجانبية — على الشمال في RTL */}
+        <div className="flex flex-[1] flex-col divide-y divide-gray-700/80 bg-gray-900 lg:max-w-[320px] lg:min-w-[240px]">
+          {items.map((article, index) => {
+            const thumb =
               article.imageUrl ||
               `https://picsum.photos/400/300?random=${article.id}`;
+            const active = index === currentSlide;
             return (
               <button
                 key={article.id}
+                type="button"
                 onClick={() => setCurrentSlide(index)}
-                className={`relative h-32 rounded-lg overflow-hidden transition-all ${
-                  index === currentSlide
-                    ? "ring-4 ring-blue-500 scale-105"
-                    : "opacity-60 hover:opacity-100"
+                className={`flex w-full items-stretch gap-3 p-3 text-right transition-colors sm:p-3.5 ${
+                  active
+                    ? "bg-gray-800/90 ring-1 ring-inset ring-red-600/40"
+                    : "bg-gray-900 hover:bg-gray-800/70"
                 }`}
               >
-                <Image
-                  src={thumbImageUrl}
-                  alt={article.title}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <p className="absolute bottom-0 left-0 right-0 p-2 text-white text-xs font-medium arabic-heading line-clamp-2">
-                  {article.title}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[11px] text-gray-400 sm:text-xs">
+                    {article.categoryName}
+                  </span>
+                  <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-white sm:text-sm arabic-heading">
+                    {article.title}
+                  </p>
+                </div>
+                <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-md sm:h-[72px] sm:w-28">
+                  <Image
+                    src={thumb}
+                    alt={article.title}
+                    fill
+                    className="object-cover"
+                    sizes="112px"
+                  />
+                </div>
               </button>
             );
           })}
         </div>
-      )}
+      </div>
     </div>
   );
 }
