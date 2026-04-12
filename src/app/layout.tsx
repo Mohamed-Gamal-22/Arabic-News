@@ -47,7 +47,7 @@ export default async function RootLayout({
         className={`${cairo.variable} ${notoSansArabic.variable} antialiased`}
       >
         <AuthProvider session={session}>
-          <Header categories={categories} />
+          <Header categories={categories} session={session} />
           <main>{children}</main>
           <Footer categories={categories.map(cat => ({
             id: typeof cat.id === 'string' ? parseInt(cat.id, 10) : (typeof cat.id === 'number' ? cat.id : 0),
