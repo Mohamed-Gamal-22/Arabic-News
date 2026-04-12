@@ -25,11 +25,11 @@ const HEADER_BAR_ROW_CLASS =
 const HEADER_NAV_CLUSTER_CLASS =
   "flex flex-1 min-w-0 items-center justify-start gap-2 sm:gap-3";
 /**
- * flex + dir="ltr" على الـ nav: المجموعة تُحاذى لليسار (بعيد عن اللوجو).
- * النص العربي يُضبط بـ dir="rtl" على كل رابط.
+ * dir="rtl" على الـ nav + justify-end: تجميع الروابط نحو اليسار (بعيد عن اللوجو).
+ * (مع RTL، flex-end = ناحية اليسار الفيزيائي). نفس سلسلة الـ class دائماً لتفادي hydration mismatch.
  */
 const HEADER_DESKTOP_NAV_CLASS =
-  "hidden min-w-0 flex-1 flex-row justify-start gap-3 md:flex" as const;
+  "hidden min-w-0 flex-1 justify-end gap-3 md:flex" as const;
 const HEADER_MOBILE_TRIGGER_WRAP_CLASS = "shrink-0 md:hidden";
 
 /** أقصى تصنيفات رئيسية في الشريط؛ الباقي يظهر تحت «المزيد». */
@@ -184,11 +184,13 @@ export default function Header({
               </div>
             ) : null}
 
-            {/* شريط التنقل — ltr للمحاذاة اليسار؛ الروابط rtl للنص */}
+            {/* شريط التنقل — rtl + justify-end يثبت المحاذاة لليسار مع صفحة عربية */}
+            {/* suppressHydrationWarning: يُسكِت اختلافاً نادراً بين HTML المُخزَّن (prefetch/كاش) ووحدة JS الحالية عند الانتقال للداشبورد */}
             <nav
               className={HEADER_DESKTOP_NAV_CLASS}
               aria-label="أقسام الموقع"
-              dir="ltr"
+              dir="rtl"
+              suppressHydrationWarning
             >
             {visibleCategories.map((category) => (
               <DesktopNavCategory
